@@ -44,8 +44,9 @@ A stale Swift 5.0.3 toolchain shadows Xcode's on this machine. **Always build vi
 (`xcrun swift build`, `xcrun swift test`) or `xcodebuild`. A bare `swift build` will fail with
 duplicate-Foundation-class errors. Toolchain is Swift 6.3.3, Xcode 26.6.
 
-Deployment floor: **macOS 26 · iOS 26 · watchOS 26**, everywhere (ADR 014, revised 2026-08-09 — see
-`docs/DECISIONS.md`). No availability gating, no compatibility seam: Liquid Glass is used directly.
+Deployment floor: **macOS 14 · iOS 17 · watchOS 10** (ADR 014, Revision 2 2026-08-09 — see
+`docs/DECISIONS.md`). SDKs are 26.x, so every Liquid Glass API needs an availability gate. Chosen to
+keep the real iPhone 11 (iOS 18.6.2) usable as a test device.
 
 ## Agents must NOT
 

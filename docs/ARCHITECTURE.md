@@ -82,7 +82,7 @@ Three independent executables: macOS, iOS, watchOS. Each is a composition root �
 Composition roots live in the app targets, not in `AppFeature`. Three independent executables cannot share one composition root: different entry points, different platform adapters (menu-bar scene vs. `WindowGroup` vs. watch scene), different lifecycles. `AppFeature` ships the *ingredients*: controller types with explicit initialiser dependencies, plus an `AppEnvironment` value bundling the repository set (plan §7).
 
 - **macOS** (`plan §21`, revised 2026-08-09): `MenuBarExtra(.window)` remains the primary surface — `LSUIElement` accessory activation policy, no Dock icon. It opens a singleton auxiliary `Window` (not `WindowGroup` — the task hub is one window representing global app state, see `docs/ROADMAP.md` M5) for the full task hub — managing and editing tasks beyond what the menu-bar panel fits. The app is still accessory-activated; the window is opened on demand, not shown at launch.
-- **iOS** (`plan §22`): `TabView` with `.tabViewStyle(.sidebarAdaptable)` (floor is iOS 26 — see ADR 014 revision). Tabs: Today · Pool · Timer · Settings.
+- **iOS** (`plan §22`): `TabView` with `.tabViewStyle(.sidebarAdaptable)` (floor is iOS 17 — see ADR 014 Revision 2). Tabs: Today · Pool · Timer · Settings.
 - **watchOS** (`plan §23`): Standalone watchOS app (`WKRunsIndependentlyOfCompanionApp`), embedded in the iOS app for a single App Store record but functional without the phone. Two screens, no deeper hierarchy.
 
 ---

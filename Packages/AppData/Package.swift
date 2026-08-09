@@ -4,7 +4,7 @@ import PackageDescription
 // Dependency rules are enforced here, by the compiler. See docs/ARCHITECTURE.md §8.
 let package = Package(
     name: "AppData",
-    platforms: [.iOS(.v26), .macOS(.v26), .watchOS(.v26)],
+    platforms: [.iOS(.v17), .macOS(.v14), .watchOS(.v10)],
     products: [.library(name: "AppData", targets: ["AppData"])],
     dependencies: [.package(path: "../TaskDomain"), .package(path: "../TimerDomain")],
     targets: [
@@ -20,3 +20,4 @@ let package = Package(
         ),
     ]
 )
+

@@ -156,16 +156,17 @@ The watchOS app is standalone (`WKRunsIndependentlyOfCompanionApp`). The timer i
 
 ## Spike R-1 Results
 
-**Placeholder.** Spike R-1 runs in Milestone 0 and measures three things. Deployment floors are
-macOS 26, iOS 26, and watchOS 26 everywhere (ADR 014, revised 2026-08-09) — there is no separate
-floor-vs-current matrix; every platform is verified once, against the only real device generation
-available:
+**Placeholder.** Spike R-1 runs in Milestone 0 and measures three things on a floor-vs-current device
+matrix (ADR 014, revised twice 2026-08-09 — floor is macOS 14 / iOS 17 / watchOS 10):
 
-| Platform | Verify on |
-| --- | --- |
-| macOS | 26 Tahoe |
-| iOS | 26 |
-| watchOS | **26 — real hardware** (Apple Watch Series 6) |
+| Platform | Floor (must pass) | Current (should pass) |
+| --- | --- | --- |
+| macOS | 14 Sonoma | 26 Tahoe |
+| iOS | 17 | 26 |
+| watchOS | 10 | **26 — real hardware** (Apple Watch Series 6) |
+
+The floor should also be verified against the real iPhone 11 (iOS 18.6.2) — the device that motivated
+keeping a floor below the current-generation devices, rather than raising it to 26 everywhere.
 
 1. **Latency:** propagation of a trivial record Mac → iPhone → Watch, foreground and background, device asleep and awake.
 2. **Duplicate delivery:** whether the same record is ever observed twice after a forced resync or reinstall.

@@ -75,8 +75,10 @@ The two that explain most of the codebase:
 
 # Important Constraints
 
-- Deployment floor **macOS 15 Sequoia · iOS 18 · watchOS 11**; SDKs are 26.x, so every Liquid Glass
-  API needs an availability gate and **every platform ships two appearances**.
+- Deployment floor **macOS 14 Sonoma · iOS 17 · watchOS 10** (ADR 014, Revision 2, 2026-08-09 — kept
+  low deliberately to keep the real iPhone 11, capped at iOS 18.6.2, usable for testing); SDKs are
+  26.x, so every Liquid Glass API needs an availability gate and **every platform ships two
+  appearances**.
 - Synced schema is frozen at **two entities**: `TaskRecord`, `TimerEventRecord`. No relationships,
   no unique attributes, all properties optional or defaulted. A separate non-mirrored container
   holds the WatchConnectivity staging store.
@@ -88,9 +90,6 @@ The two that explain most of the codebase:
 
 - **A stale Swift 5.0.3 toolchain shadows Xcode's.** A bare `swift build` fails with duplicate
   Foundation classes. Always use `xcrun`. Toolchain in use: Swift 6.3.3 / Xcode 26.6.
-- **`TaskTracker-iOS` scheme fails to build** ("watchOS 26.5 must be installed"): Xcode's watchOS
-  SDK is 26.5, installed simulator runtimes are 26.0 and 11.5 only. Re-check after
-  `xcodebuild -downloadPlatform watchOS` finishes.
 - **No real Apple Developer Team ID confirmed yet** — see Current Milestone. CloudKit entitlements
   are not configured in `project.yml`; do not re-add them without a verified Team ID (a cached
   codesign identity is not sufficient evidence — verify against
@@ -104,12 +103,21 @@ verification half only.
 
 # Resolved
 
-- **Deployment floor** (was: conflicted with available hardware). Resolved 2026-08-09: floor raised
-  to macOS 26 / iOS 26 / watchOS 26 everywhere; dual-appearance compatibility seam deleted. See
-  ADR 014 revision in `docs/DECISIONS.md`. Reasoning: the only paired Watch is a Series 6 on
-  watchOS 26.0, so a watchOS 11 floor could never be verified on real hardware — the exact guarantee
-  ADR 014 exists to make. `AppDesign` had no compatibility-seam code yet, so this was a
-  documentation + `project.yml` change, not a rollback.
+- **Deployment floor** (was: conflicted with available hardware). Went through two revisions on
+  2026-08-09, both in `docs/DECISIONS.md` ADR 014:
+  - **Revision 1**: raised to macOS 26 / iOS 26 / watchOS 26 everywhere, seam deleted. Reasoning at
+    the time: the only paired Watch is a Series 6 on watchOS 26.0, so a watchOS 11 floor could never
+    be verified on real hardware. This checked the Watch but never checked the paired iPhones.
+  - **Revision 2 (final)**: reverted back down to macOS 14 / iOS 17 / watchOS 10, dual-appearance
+    seam restored. The full device check that should have happened before Revision 1 found the real
+    roster: Mac macOS 26.5.2, iPhone 13 mini iOS 26.6, Watch watchOS 26.0, but **iPhone 11 iOS
+    18.6.2 — hardware-capped, cannot reach 26**. A 26-everywhere floor would have silently retired
+    the iPhone 11 as a test device; the user wants broad real-device reach instead.
+  - `AppDesign` had no compatibility-seam code at any point, so both revisions were documentation +
+    `project.yml` + package-manifest changes only, never a code rollback.
+  - **Lesson**: check the full real-device roster (`xcrun devicectl list devices`, then
+    `devicectl device info details --device <id>` for `osVersionNumber`) before setting or revising
+    a deployment floor — not just the one device that happens to be top of mind.
 - **macOS app scope** (was: menu-bar-only vs. also needing a manage/edit surface). Resolved
   2026-08-09: `MenuBarExtra(.window)` stays the primary, `LSUIElement` surface; it opens a singleton
   auxiliary `Window` for the full task hub (manage/edit tasks) on demand. See `docs/ARCHITECTURE.md`

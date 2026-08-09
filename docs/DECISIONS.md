@@ -684,16 +684,16 @@ See [`TIMER_ARCHITECTURE.md`](TIMER_ARCHITECTURE.md) and [`DATA_MODEL.md`](DATA_
 
 ### Decision
 
-Support macOS 15 Sequoia, iOS 18, and watchOS 11 as deployment floors; use Liquid Glass only on
-version 26 and newer, with first-class material fallbacks.
+Support macOS 26, iOS 26, and watchOS 26 as deployment floors, everywhere. No dual-appearance
+compatibility seam.
 
 ### Date
 
-2026-08-09
+2026-08-09 (revised 2026-08-09 — see Revision below)
 
 ### Status
 
-Accepted
+Accepted (revised)
 
 ### Context
 
@@ -710,9 +710,8 @@ background modifier.
 
 ### Chosen Approach
 
-Set floors to macOS 15, iOS 18, and watchOS 11. `AppDesign` exposes semantic modifiers and
-availability-gated containers/components that select Liquid Glass on 26+ and material-based designs
-on the floor releases. Feature code does not branch on OS version.
+Set floors to macOS 26, iOS 26, and watchOS 26 (see Revision). `AppDesign` uses Liquid Glass
+directly — no availability gating, no material fallback path.
 
 ### Why
 
@@ -722,11 +721,29 @@ grouping, toolbars, and tab behaviour can differ structurally.
 
 ### Consequences
 
-- Every surface has two supported appearances across three platforms.
-- Design and accessibility verification must cover both paths.
-- `AppDesign` carries extra component-level compatibility work.
-- Minimum-OS builds and real-device watchOS 11 sync testing are required; building only against SDK
-  26 does not prove floor behaviour.
+- One supported appearance per surface across all three platforms.
+- `AppDesign` has no compatibility-seam component work.
+
+### Revision — 2026-08-09
+
+**Original decision** (floors: macOS 15 / iOS 18 / watchOS 11, dual appearance via `AppDesign`
+compatibility seam) is superseded. The floor was set before checking available hardware: the only
+paired Apple Watch is a Series 6 on watchOS 26.0, and Xcode's installed watchOS SDK (26.5) doesn't
+ship a matching 11.x simulator runtime by default either, so a watchOS 11 floor could not be verified
+on real hardware — exactly the guarantee ADR 014 exists to make (spike R-1 requires "watchOS 11 —
+real hardware"). Rather than ship an unverified floor with a compatibility seam paying for two
+appearances, the floor is raised to 26 everywhere, deleting the seam entirely: it matches the only
+real device available and removes a whole class of availability-gating work with nothing to show for
+it. `AppDesign` had not yet implemented any compatibility-seam code (Milestone 0/skeleton only), so
+this is a documentation and `project.yml` correction, not a code rollback.
+
+**Consequences of the revision:**
+- `project.yml` `deploymentTarget` is macOS 26.0 / iOS 26.0 / watchOS 26.0.
+- Milestone 9's "material-fallback verification on the floor" step is deleted — there is no fallback
+  path to verify.
+- `docs/DESIGN_SYSTEM.md` and spike R-1's device matrix (`docs/ICLOUD_SYNC.md`) must be read as
+  targeting 26 everywhere, not the original 15/18/11 floor.
+- This removes the deployment-floor open question recorded in `memory.md`.
 
 See [`DESIGN_SYSTEM.md`](DESIGN_SYSTEM.md), [`ARCHITECTURE.md`](ARCHITECTURE.md), and
 [`TESTING.md`](TESTING.md).

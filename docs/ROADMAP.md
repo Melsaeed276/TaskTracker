@@ -13,11 +13,11 @@ Milestones 0–9, dependency order, and rationale. Status is tracked here; `memo
 | 2 | TaskDomain | Model, DayKey, services, repository protocols, tests | MVP 0 | Completed |
 | 3 | AppData (local) | SwiftData models, indexes, repositories, mapping, in-memory + migration tests. No CloudKit. | MVP 0 | Completed |
 | 4 | Convergence proof | CloudKit mirroring on; throwaway two-device shells (Mac + iPhone) doing nothing but start/pause/resume; F8 proven on real hardware, including two-offline-starts, supersession permanence and duplicate delivery; schema promoted | MVP 0 | Not Started |
-| 5 | macOS app | MenuBarExtra, Today, timer controls, quick-add, Pool search, preferences, AppFeature controllers, AppDesign v1 with adaptive surfaces | MVP 1 | Not Started |
+| 5 | macOS app | MenuBarExtra (primary), auxiliary task-hub window, Today, timer controls, quick-add, Pool search, preferences, AppFeature controllers, AppDesign v1 (Liquid Glass, no compatibility seam) | MVP 1 | Not Started |
 | 6 | iOS app | Tabs, Today, Pool, Timer, task editing, timer presets, expiry notification | MVP 1 | Not Started |
 | 7 | watchOS app | Standalone target, two screens, timer controls, R-1 re-measured; WC fast-path only if the numbers demand it | MVP 2 | Not Started |
 | 8 | Reliability | Conflict scenarios end-to-end, long-offline recovery, edge-case sweep, history + per-task totals (F9) | MVP 2 | Not Started |
-| 9 | Polish | Liquid Glass audit on 26+, material-fallback verification, layered app icon, accessibility pass | MVP 2 | Not Started |
+| 9 | Polish | Liquid Glass audit, layered app icon, accessibility pass | MVP 2 | Not Started |
 
 ---
 
@@ -80,7 +80,7 @@ CloudKit mirroring turned on. Throwaway two-device shells (Mac + iPhone) doing n
 
 ### M5 — macOS App (MVP 1)
 
-`MenuBarExtra(.window)` as primary surface. Today list, timer controls, quick-add, Pool search, preferences. `AppFeature` controllers (`ActiveTimerController`, `TodayController`, `PoolController`) and use cases. `AppDesign` v1 with adaptive surfaces (Liquid Glass conditional on 26+, material fallback below). Menu-bar label: SF Symbol when idle, monospaced-digit countdown when active.
+`MenuBarExtra(.window)` remains the primary surface — `LSUIElement`, no Dock icon — and is where quick task/timer glances and actions live. It opens an auxiliary `Window` (singleton, not `WindowGroup`) for the full task hub: managing and editing tasks beyond what fits the menu-bar panel. Today list, timer controls, quick-add, Pool search, preferences. `AppFeature` controllers (`ActiveTimerController`, `TodayController`, `PoolController`) and use cases. `AppDesign` v1 in Liquid Glass — floor is 26 everywhere (ADR 014 revision), no compatibility seam. Menu-bar label: SF Symbol when idle, monospaced-digit countdown when active.
 
 ### M6 — iOS App (MVP 1)
 
@@ -96,4 +96,4 @@ End-to-end conflict scenarios. Long-offline recovery. Edge-case sweep (plan §28
 
 ### M9 — Polish (MVP 2)
 
-Liquid Glass audit on 26+. Material-fallback verification on the floor (iOS 18 / macOS 15 / watchOS 11). Layered app icon (Icon Composer, three layers, all appearance variants, circular watchOS mask). Accessibility pass: Dynamic Type, VoiceOver labels, Reduce Transparency, Increase Contrast, Reduce Motion. Both appearances laid out and reviewed — the floor build is a first-class appearance, not a degraded mode (plan §26).
+Liquid Glass audit across all three platforms (single floor, no fallback path to verify — ADR 014 revision). Layered app icon (Icon Composer, three layers, all appearance variants, circular watchOS mask). Accessibility pass: Dynamic Type, VoiceOver labels, Reduce Transparency, Increase Contrast, Reduce Motion.

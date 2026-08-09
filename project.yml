@@ -7,9 +7,9 @@ options:
   bundleIdPrefix: com.diwan
   createIntermediateGroups: true
   deploymentTarget:
-    macOS: "15.0"
-    iOS: "18.0"
-    watchOS: "11.0"
+    macOS: "26.0"
+    iOS: "26.0"
+    watchOS: "26.0"
   # Drop XcodeGen's blue folder refs for local packages (keeps XCLocalSwiftPackageReference).
   # Without this, SourceKit warns that *Tests sources are not under Tests/<Target>.
   postGenCommand: python3 scripts/strip-local-package-folder-refs.py

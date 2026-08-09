@@ -1,10 +1,10 @@
-// swift-tools-version: 6.0
+// swift-tools-version: 6.2
 import PackageDescription
 
 // Dependency rules are enforced here, by the compiler. See docs/ARCHITECTURE.md §8.
 let package = Package(
     name: "AppData",
-    platforms: [.iOS(.v18), .macOS(.v15), .watchOS(.v11)],
+    platforms: [.iOS(.v26), .macOS(.v26), .watchOS(.v26)],
     products: [.library(name: "AppData", targets: ["AppData"])],
     dependencies: [.package(path: "../TaskDomain"), .package(path: "../TimerDomain")],
     targets: [

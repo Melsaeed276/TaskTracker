@@ -7,8 +7,8 @@ import TimerDomain
 @Suite("AppData")
 struct AppDataTests {
     @Test("In-memory container round-trip: TaskRecord ↔ Task")
-    func taskRoundTrip() throws {
-        let container = try AppDataModelContainer.makeLocalInMemory()
+    func taskRoundTrip() async throws {
+        let container = try await MainActor.run { try AppDataModelContainer.makeLocalInMemory() }
         let repo = SwiftDataTaskRepository(modelContainer: container)
 
         let now = Date(timeIntervalSince1970: 1_700_000_000)
@@ -22,14 +22,14 @@ struct AppDataTests {
             updatedAt: now
         )
 
-        try repo.upsert(task)
-        let loaded = try repo.task(id: task.id)
+        try await repo.upsert(task)
+        let loaded = try await repo.task(id: task.id)
         #expect(loaded == task)
     }
 
     @Test("In-memory container round-trip: TimerEventRecord ↔ TimerEvent")
-    func timerEventRoundTrip() throws {
-        let container = try AppDataModelContainer.makeLocalInMemory()
+    func timerEventRoundTrip() async throws {
+        let container = try await MainActor.run { try AppDataModelContainer.makeLocalInMemory() }
         let repo = SwiftDataTimerEventRepository(modelContainer: container)
 
         let now = Date(timeIntervalSince1970: 1_700_000_000)
@@ -45,8 +45,8 @@ struct AppDataTests {
             relatedTaskID: UUID()
         )
 
-        try repo.append(event)
-        let all = try repo.loadAllEvents()
+        try await repo.append(event)
+        let all = try await repo.loadAllEvents()
         #expect(all.contains(event))
     }
 }

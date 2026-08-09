@@ -14,6 +14,7 @@
 Offline, background sync, watchOS support, and migrations for near-zero code. Its one disqualifying weakness — no custom merge hook — is neutralised by never asking it to merge anything: task edits are low-conflict and property-level LWW is genuinely fine; timer state is high-conflict and is expressed as immutable events that are appended, never updated (plan §14).
 
 Alternatives rejected:
+
 - **Core Data + CloudKit** — same sync engine, worse Swift 6 ergonomics, `.xcdatamodeld` in packages is awkward (plan §13).
 - **CKSyncEngine / raw CloudKit** — full control, but hand-build the local store, offline queue, change-token bookkeeping, and watch path: months of infrastructure (plan §14).
 - **Hybrid (SwiftData for tasks, CKSyncEngine for timer)** — two sync engines, two failure modes, two debugging stories (plan §14).
@@ -143,7 +144,7 @@ The watchOS app is standalone (`WKRunsIndependentlyOfCompanionApp`). The timer i
 ## CloudKit Limitations
 
 | Limitation | Impact | Mitigation |
-|---|---|---|
+| --- | --- | --- |
 | No custom conflict resolution | Cannot hook into merge decisions | Event-sourcing for timers (append-only); LWW for tasks is fine |
 | No `@Attribute(.unique)` | Cannot enforce unique constraints | Deduplication in the fold by event `id` |
 | Fragile relationships | CloudKit relationships are migration-sensitive | Associations as plain UUID fields |
@@ -158,7 +159,7 @@ The watchOS app is standalone (`WKRunsIndependentlyOfCompanionApp`). The timer i
 **Placeholder.** Spike R-1 runs in Milestone 0 and measures three things on a floor-vs-current device matrix:
 
 | Platform | Floor (must pass) | Current (should pass) |
-|---|---|---|
+| --- | --- | --- |
 | macOS | 15 Sequoia | 26 Tahoe |
 | iOS | 18 | 26 |
 | watchOS | **11 — real hardware** | 26 |

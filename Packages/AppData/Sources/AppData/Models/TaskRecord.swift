@@ -2,7 +2,6 @@ import Foundation
 import SwiftData
 
 @Model
-@Index([\.updatedAt])
 public final class TaskRecord {
     // All properties are optional-or-defaulted to satisfy the CloudKit contract even before sync is enabled.
     // `id` is non-optional and acts as the application-level primary identifier.

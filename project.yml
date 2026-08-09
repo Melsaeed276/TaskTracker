@@ -1,5 +1,6 @@
 # XcodeGen manifest — regenerate with: xcodegen generate
 # The .xcodeproj is a build artifact. Edit THIS file, never the project in Xcode.
+# postGenCommand strips local-package folder refs (scripts/strip-local-package-folder-refs.py).
 name: TaskTracker
 
 options:
@@ -9,6 +10,9 @@ options:
     macOS: "15.0"
     iOS: "18.0"
     watchOS: "11.0"
+  # Drop XcodeGen's blue folder refs for local packages (keeps XCLocalSwiftPackageReference).
+  # Without this, SourceKit warns that *Tests sources are not under Tests/<Target>.
+  postGenCommand: python3 scripts/strip-local-package-folder-refs.py
 
 settings:
   base:

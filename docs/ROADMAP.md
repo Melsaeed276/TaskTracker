@@ -11,7 +11,7 @@ Milestones 0–9, dependency order, and rationale. Status is tracked here; `memo
 | 0 | Foundation | Workspace, packages, docs, CloudKit config, spike R-1 | MVP 0 | In Progress |
 | 1 | TimerDomain | Events, Lamport, fold, state machine, calculator, arbitration, exhaustive tests. No UI, no persistence. | MVP 0 | Completed |
 | 2 | TaskDomain | Model, DayKey, services, repository protocols, tests | MVP 0 | Completed |
-| 3 | AppData (local) | SwiftData models, indexes, repositories, mapping, in-memory + migration tests. No CloudKit. | MVP 0 | Not Started |
+| 3 | AppData (local) | SwiftData models, indexes, repositories, mapping, in-memory + migration tests. No CloudKit. | MVP 0 | Completed |
 | 4 | Convergence proof | CloudKit mirroring on; throwaway two-device shells (Mac + iPhone) doing nothing but start/pause/resume; F8 proven on real hardware, including two-offline-starts, supersession permanence and duplicate delivery; schema promoted | MVP 0 | Not Started |
 | 5 | macOS app | MenuBarExtra, Today, timer controls, quick-add, Pool search, preferences, AppFeature controllers, AppDesign v1 with adaptive surfaces | MVP 1 | Not Started |
 | 6 | iOS app | Tabs, Today, Pool, Timer, task editing, timer presets, expiry notification | MVP 1 | Not Started |

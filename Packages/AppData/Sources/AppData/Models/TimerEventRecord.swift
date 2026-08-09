@@ -2,8 +2,6 @@ import Foundation
 import SwiftData
 
 @Model
-@Index([\.kind, \.occurredAt, \.deviceID])
-@Index([\.sessionID])
 public final class TimerEventRecord {
     public var id: UUID
     public var sessionID: UUID

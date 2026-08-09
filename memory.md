@@ -28,6 +28,7 @@ Outstanding:
 - Milestone 0 scaffolding only (foundation).
 - **Milestone 1 — TimerDomain implemented and verified** (`xcrun swift test --package-path Packages/TimerDomain`).
 - **Milestone 2 — TaskDomain implemented and verified** (`xcrun swift test --package-path Packages/TaskDomain`).
+- **Milestone 3 — AppData (local) implemented and verified** (`xcrun swift test --package-path Packages/AppData`).
 
 # Active Work
 
@@ -83,7 +84,7 @@ approved 18/15/11 floor** and must be revised if the floor changes.
 3. CloudKit container + entitlements.
 4. Run spike R-1 and record results in `docs/ICLOUD_SYNC.md`.
 5. Milestone 0 verification.
-6. Begin **Milestone 3 — AppData (local)**.
+6. Begin **Milestone 4 — Convergence proof** (CloudKit mirroring + disposable two-device shells).
 
 # Recent Changes
 

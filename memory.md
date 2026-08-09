@@ -33,13 +33,21 @@ dependency-rule probe intact):
 - `xcodebuild -downloadPlatform watchOS` completed; watchOS 26.5 simulator runtime now installed.
   `TaskTracker-iOS` (which embeds the watch app) and `TaskTracker-watchOS` both build clean.
 
-Still outstanding — needs a real Apple Developer Team ID (user chose to skip signing for now):
-- **CloudKit container + entitlements.** A cached codesign identity (`T96KAT2Q28`) was mistakenly
-  treated as a valid signed-in account earlier this session; it is not one of Xcode's actual
-  configured teams and the entitlements/`DEVELOPMENT_TEAM` changes were reverted. Xcode's real
-  accounts include several paid company teams (e.g. "Aksis Bil. Hiz. ve Dan. A.S" / `3SFM6JC478`)
-  and one free Personal Team (`Y592TH6PR3`, cannot provision CloudKit).
-- Spike R-1 on real hardware (watchOS 26 — Apple Watch Series 6).
+Still outstanding — **user is handling the Apple Developer account themselves**:
+- **CloudKit entitlements are wired into `project.yml`** (all three targets: `TaskTracker-macOS`,
+  `TaskTracker-iOS`, `TaskTracker-watchOS` — `com.apple.developer.icloud-container-identifiers:
+  [iCloud.com.diwan.TaskTracker]`, `com.apple.developer.icloud-services: [CloudKit]`), deliberately
+  *without* a hardcoded `DEVELOPMENT_TEAM` this time (an earlier attempt hardcoded a cached codesign
+  identity, `T96KAT2Q28`, that turned out not to be a real signed-in Xcode account — see git log).
+  `CODE_SIGN_STYLE: Automatic` is already set. This currently fails to build from the CLI: `"...has
+  entitlements that require signing with a development certificate. Enable development signing in
+  the Signing & Capabilities editor."` — **that's the user's step**: open the project in Xcode, pick
+  a team with CloudKit entitlement (paid account required — a free Personal Team cannot provision
+  CloudKit) in Signing & Capabilities for each of the three app targets.
+- Once signing works, switch `Apps/macOS/TaskTrackerApp.swift` and `Apps/iOS/TaskTrackerApp.swift`
+  from `AppDataModelContainer.makeLocalInMemory()` to `.makeSynced()` to actually exercise CloudKit.
+- Spike R-1 on real hardware (watchOS 26 — Apple Watch Series 6; also verify against the floor —
+  iPhone 11, iOS 18.6.2).
 - Schema promotion from development to production.
 - `cursor-agent`'s headless mode (`-p`/`--print`) is not authenticated even though interactive
   `cursor-agent whoami`/`login` succeed — its browser-session token isn't visible to headless

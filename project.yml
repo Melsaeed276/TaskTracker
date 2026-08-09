@@ -1,0 +1,91 @@
+# XcodeGen manifest — regenerate with: xcodegen generate
+# The .xcodeproj is a build artifact. Edit THIS file, never the project in Xcode.
+name: TaskTracker
+
+options:
+  bundleIdPrefix: com.diwan
+  createIntermediateGroups: true
+  deploymentTarget:
+    macOS: "15.0"
+    iOS: "18.0"
+    watchOS: "11.0"
+
+settings:
+  base:
+    SWIFT_VERSION: "6.0"
+    SWIFT_STRICT_CONCURRENCY: complete
+    SWIFT_UPCOMING_FEATURE_STRICT_CONCURRENCY: YES
+    ENABLE_USER_SCRIPT_SANDBOXING: YES
+    CODE_SIGN_STYLE: Automatic
+    GENERATE_INFOPLIST_FILE: YES
+    MARKETING_VERSION: "0.1.0"
+    CURRENT_PROJECT_VERSION: "1"
+
+packages:
+  TimerDomain: { path: Packages/TimerDomain }
+  TaskDomain:  { path: Packages/TaskDomain }
+  AppData:     { path: Packages/AppData }
+  AppFeature:  { path: Packages/AppFeature }
+  AppDesign:   { path: Packages/AppDesign }
+
+targets:
+
+  # ── macOS: menu-bar first. LSUIElement so no Dock icon appears. ──
+  TaskTracker-macOS:
+    type: application
+    platform: macOS
+    sources: [Apps/macOS]
+    dependencies:
+      - package: AppFeature
+      - package: AppDesign
+    settings:
+      base:
+        PRODUCT_BUNDLE_IDENTIFIER: com.diwan.TaskTracker
+        PRODUCT_NAME: TaskTracker
+        INFOPLIST_KEY_LSUIElement: YES
+        ENABLE_APP_SANDBOX: YES
+        ENABLE_USER_SELECTED_FILES: readonly
+
+  # ── iOS ──
+  TaskTracker-iOS:
+    type: application
+    platform: iOS
+    sources: [Apps/iOS]
+    dependencies:
+      - package: AppFeature
+      - package: AppDesign
+      - target: TaskTracker-watchOS
+        embed: true
+    settings:
+      base:
+        PRODUCT_BUNDLE_IDENTIFIER: com.diwan.TaskTracker
+        PRODUCT_NAME: TaskTracker
+        INFOPLIST_KEY_UILaunchScreen_Generation: YES
+        TARGETED_DEVICE_FAMILY: "1,2"
+
+  # ── watchOS: standalone. Embedded in the iOS app for a single App Store
+  #    record, but runs without the phone (see docs/ARCHITECTURE.md).
+  TaskTracker-watchOS:
+    type: application
+    platform: watchOS
+    sources: [Apps/watchOS]
+    dependencies:
+      - package: AppFeature
+      - package: AppDesign
+    settings:
+      base:
+        PRODUCT_BUNDLE_IDENTIFIER: com.diwan.TaskTracker.watchkitapp
+        PRODUCT_NAME: TaskTracker
+        INFOPLIST_KEY_WKRunsIndependentlyOfCompanionApp: YES
+        INFOPLIST_KEY_WKCompanionAppBundleIdentifier: com.diwan.TaskTracker
+
+schemes:
+  TaskTracker-macOS:
+    build: { targets: { TaskTracker-macOS: all } }
+  TaskTracker-iOS:
+    build: { targets: { TaskTracker-iOS: all } }
+  TaskTracker-watchOS:
+    build: { targets: { TaskTracker-watchOS: all } }
+
+# Package unit tests run via `xcrun swift test` in each package directory.
+# See docs/TESTING.md.

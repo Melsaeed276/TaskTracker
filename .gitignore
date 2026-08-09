@@ -1,0 +1,16 @@
+# Build artifacts
+.build/
+DerivedData/
+*.o
+*.dia
+
+# XcodeGen output — project.yml is the source of truth
+TaskTracker.xcodeproj/
+
+# Xcode user state
+xcuserdata/
+*.xcuserstate
+.swiftpm/
+
+# macOS
+.DS_Store

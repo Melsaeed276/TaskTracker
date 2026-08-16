@@ -4,13 +4,13 @@ import TimerDomain
 public enum TimerEventMapping: Sendable {
     public static func toDomain(_ record: TimerEventRecord) -> TimerEvent {
         TimerEvent(
-            id: record.id,
-            sessionID: record.sessionID,
-            kind: record.kind,
-            occurredAt: record.occurredAt,
-            deviceID: record.deviceID,
-            lamport: record.lamport,
-            schemaVersion: record.schemaVersion,
+            id: record.id ?? UUID(),
+            sessionID: record.sessionID ?? UUID(),
+            kind: record.kind ?? "",
+            occurredAt: record.occurredAt ?? .distantPast,
+            deviceID: record.deviceID ?? UUID(),
+            lamport: record.lamport ?? 0,
+            schemaVersion: record.schemaVersion ?? 0,
             duration: record.duration,
             relatedTaskID: record.relatedTaskID
         )

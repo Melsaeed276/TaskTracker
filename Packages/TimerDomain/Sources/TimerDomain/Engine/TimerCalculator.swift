@@ -17,6 +17,22 @@ public enum TimerCalculator: Sendable {
         return max(0, session.duration - elapsed(projection, at: at))
     }
 
+    /// Remaining time for an already-evaluated active timer. Views must not compute this.
+    public static func remaining(_ state: ActiveTimerState, at: Date) -> TimeInterval {
+        switch state {
+        case .idle, .completed:
+            return 0
+        case .active(let session, let phase):
+            let runningExtra: TimeInterval
+            if case .running(let since) = phase {
+                runningExtra = max(0, at.timeIntervalSince(since))
+            } else {
+                runningExtra = 0
+            }
+            return max(0, session.duration - session.accumulatedActive - runningExtra)
+        }
+    }
+
     /// Global evaluation: what the app should show as the single active timer at this instant.
     ///
     /// Note: `.stopped` yields `.idle` globally (the timer is over and does not need an "awaiting

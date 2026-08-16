@@ -152,12 +152,48 @@ The watchOS app is standalone (`WKRunsIndependentlyOfCompanionApp`). The timer i
 | Schema promotion is one-way | Mistakes are expensive once records exist | Freeze schema in M0; promote deliberately in M4 (R-8) |
 | Push latency to sleeping watch | May not meet product promise for cross-device timer control | Spike R-1 measures it; WC fast-path is additive if needed (R-1) |
 
+### Required capabilities (all synced app targets)
+
+SwiftData’s CloudKit mirroring wakes the app with **silent pushes**. Every macOS / iOS / watchOS
+app target therefore declares:
+
+- `UIBackgroundModes` → `remote-notification` (Info.plist)
+- `aps-environment` entitlement (Push capability; development while signing automatically)
+
+Without the background mode, the runtime logs:
+`BUG IN CLIENT OF CLOUDKIT: CloudKit push notifications require the 'remote-notification' background mode`.
+
+### Simulator / no iCloud account
+
+`CKAccountStatusNoAccount` / `NSCocoaErrorDomain Code=134400` means the device or simulator is
+**not signed into iCloud**. Local SwiftData still works; mirroring does not. Sign in under
+Settings → Apple ID on the simulator or use a real device signed into the same Apple ID as your
+Mac. Simulators also do not deliver remote notifications reliably — use two real devices for sync
+timing tests (spike R-1).
+
 ---
 
 ## Spike R-1 Results
 
-**Placeholder.** Spike R-1 runs in Milestone 0 and measures three things on a floor-vs-current device
-matrix (ADR 014, revised twice 2026-08-09 — floor is macOS 14 / iOS 17 / watchOS 10):
+**Partial Mac observation 2026-08-15.** User-captured `spike_r1_cloudkit_event` lines from a synced
+macOS launch show a healthy mirroring session (all `error=nil`):
+
+| Sequence | Outcome |
+| --- | --- |
+| `setup` start → succeed (~40 ms) | CloudKit store attached |
+| `import` ×2 succeed (~1.85 s, then ~0.25 s) | Remote rows mirrored in |
+| `export` ×3 succeed (ms-scale) | Local changes uploaded |
+
+Each event emits a `succeeded=false` start line (`endDate=nil`) then a matching `succeeded=true`
+completion — that pair is normal, not a failure. Full multi-device latency / duplicate / concurrent
+insert matrix is still outstanding.
+
+**Not yet run on the full hardware matrix.** Instrumentation for the run landed 2026-08-14 in AppData as
+transient `os.Logger` output only (subsystem `com.diwan.TaskTracker`, category `SpikeR1`).
+Nothing is written to the CloudKit-mirrored store.
+
+Spike R-1 measures three things on a floor-vs-current device matrix (ADR 014, revised twice
+2026-08-09 — floor is macOS 14 / iOS 17 / watchOS 10):
 
 | Platform | Floor (must pass) | Current (should pass) |
 | --- | --- | --- |
@@ -172,7 +208,42 @@ keeping a floor below the current-generation devices, rather than raising it to 
 2. **Duplicate delivery:** whether the same record is ever observed twice after a forced resync or reinstall.
 3. **Concurrent insert behaviour:** two devices inserting sibling records offline, then reconnecting — confirming that appends genuinely do not merge.
 
-Results will be recorded here after Milestone 0 completes.
+### Capturing logs for the hardware run
+
+On a successful local `append(_:)`, the authoring device emits `spike_r1_append` with event id,
+kind, `deviceID`, `occurredAt`, and `writeCompletedAt` (wall-clock of the local save). Interpolated
+fields use `privacy: .public` so they are not redacted in Console.app / `log stream` / xclog.
+
+When SwiftData's CloudKit mirroring reports activity, each device emits `spike_r1_cloudkit_event`
+from `NSPersistentCloudKitContainer.eventChangedNotification`. `type=import` with a non-nil
+`endDate` is the remote-change batch. That API does **not** surface per-record `TimerEvent.id` or
+originating `deviceID` — correlate by wall-clock (`writeCompletedAt` on the sender vs `observedAt` /
+`endDate` on the receiver), then confirm the row in the local store. Do not treat
+`cloudKitEventID` as a timer-event id; it identifies the mirroring operation.
+
+**Simulator** — Axiom `xclog` (JSON lines; `launch` restarts the app and captures `Logger` output):
+
+```
+xclog launch com.diwan.TaskTracker.app
+xclog launch com.diwan.TaskTracker.watch
+```
+
+Keep lines where `"subsystem"` is `com.diwan.TaskTracker` and `"category"` is `SpikeR1`.
+
+**Physical devices** (the actual R-1 matrix). `xclog launch` is simulator-only; use Console.app or
+the unified log. In Console.app, filter on subsystem `com.diwan.TaskTracker` / category `SpikeR1`.
+From a Mac:
+
+```
+log stream --style json --predicate 'subsystem == "com.diwan.TaskTracker" AND category == "SpikeR1"'
+```
+
+After the fact: `log show --last 30m --style json` with the same predicate (include `--device` /
+`--udid` when pulling from a connected iPhone or Watch). `xclog show` can also read the unified log
+on the Mac.
+
+Results (measured latency, duplicate delivery, concurrent insert) will be recorded here after the
+hardware run. This section is capture methodology only until then.
 
 ---
 

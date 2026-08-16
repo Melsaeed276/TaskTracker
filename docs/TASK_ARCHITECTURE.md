@@ -28,7 +28,11 @@ TaskDomain/
 └── Support/        TimeSource, TaskValidationError
 ```
 
-**`Task`** fields: `id`, `title`, `notes`, `createdAt`, `completedAt: Date?`, `scheduledDay: DayKey?`, `updatedAt`.
+**`Task`** fields: `id`, `title`, `notes`, `createdAt`, `completedAt: Date?`, `scheduledDay: DayKey?`,
+`priority: TaskPriority`, `updatedAt`.
+
+`TaskPriority` is `none | low | medium | high` (stored as optional `Int` on `TaskRecord` for CloudKit).
+Default is `.none`. Priority is a user label only — it does not affect Pool/Today membership.
 
 ### Completion: derived from `completedAt`
 
@@ -131,10 +135,10 @@ This keeps `TaskDomain` persistence-ignorant. The protocol defines the contract;
 
 1. **Title non-empty after trimming.** A task cannot be created or saved with an empty or whitespace-only title.
 2. **`completedAt` never in the future.** Completion timestamp is always ≤ now.
-3. **Completing does not clear `scheduledDay`.** A completed Today task retains its scheduled day; this preserves the ability to uncomplete and have it reappear in Today.
+3. **Completing does not clear `scheduledDay`.** A completed Today task retains its scheduled day; this preserves the ability to uncomplete and have it reappear in Today. The **Today UI** lists only incomplete tasks; completed work is browsed from Pool → Completed.
 4. **`updatedAt` monotonic per device.** Each edit on a device produces a strictly later `updatedAt`. This is enforced locally, not across devices (different devices may have different `updatedAt` values for the same logical edit — property-level LWW is acceptable for single-user title/notes edits, plan §28).
 5. **Completion is derived.** `isCompleted = completedAt != nil` — never a parallel boolean (plan §9).
-6. **Pool is a query.** `scheduledDay == nil && completedAt == nil` defines membership. There is no separate Pool entity, no Pool container, no Pool state on the task.
+6. **Pool is a query.** `scheduledDay == nil && completedAt == nil` defines membership. There is no separate Pool entity, no Pool container, no Pool state on the task. The Pool UI may also show a **Completed** filter over `completedTasks()` for reopen/delete.
 
 ---
 

@@ -41,8 +41,9 @@ extension SwiftDataTaskRepository: TaskRepository {
     }
 
     public func upsert(_ task: Task) async throws {
+        let taskID = task.id
         let fetch = FetchDescriptor<TaskRecord>(
-            predicate: #Predicate { $0.id == task.id }
+            predicate: #Predicate { $0.id == taskID }
         )
         if let existing = try modelContext.fetch(fetch).first {
             TaskMapping.apply(task, to: existing)

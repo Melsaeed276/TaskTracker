@@ -7,6 +7,7 @@ public struct Task: Sendable, Hashable, Codable, Identifiable {
     public var createdAt: Date
     public var completedAt: Date?
     public var scheduledDay: DayKey?
+    public var priority: TaskPriority
     public var updatedAt: Date
 
     public init(
@@ -16,6 +17,7 @@ public struct Task: Sendable, Hashable, Codable, Identifiable {
         createdAt: Date,
         completedAt: Date? = nil,
         scheduledDay: DayKey? = nil,
+        priority: TaskPriority = .none,
         updatedAt: Date
     ) {
         self.id = id
@@ -24,6 +26,7 @@ public struct Task: Sendable, Hashable, Codable, Identifiable {
         self.createdAt = createdAt
         self.completedAt = completedAt
         self.scheduledDay = scheduledDay
+        self.priority = priority
         self.updatedAt = updatedAt
     }
 

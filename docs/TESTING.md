@@ -115,12 +115,15 @@ Two simulated devices driven by the fake transport assert convergence — includ
 
 ## Platform Tests
 
-Light. Focused on:
+XCTest/XCUITest now covers high-risk app-level regressions directly:
 
-- Menu-bar label rendering (macOS).
-- `scenePhase` restoration.
-- watchOS lifecycle.
-- Manual cross-device verification for the real F8 walkthrough (plan §27).
+- **iOS UI tests**: Today quick-add visibility, Pool multi-add visibility (regression for the "only last task appears" class), Timer preset/start/control-state/stop flow.
+- **macOS UI tests**: Menu-bar panel segmented Today/Timer tabs (switch + default-to-Timer when
+  active), quick-add visibility, circle-tap complete, title-tap details editor, Run button starts
+  timer, Task Hub checkbox complete, "Open Tasks" window activation/opening, Settings opening from
+  `MenuBarExtra`.
+- **watchOS**: still manual for now; XCUITest coverage is intentionally deferred because watch UI automation remains limited and comparatively brittle for this app's current scope.
+- Manual cross-device verification remains required for the real F8 sync walkthrough (plan §27).
 
 ---
 

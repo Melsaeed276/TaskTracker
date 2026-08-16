@@ -8,15 +8,15 @@ Milestones 0–9, dependency order, and rationale. Status is tracked here; `memo
 
 | M | Name | Contents | Tier | Status |
 |---|---|---|---|---|
-| 0 | Foundation | Workspace, packages, docs, CloudKit config, spike R-1 | MVP 0 | In Progress |
+| 0 | Foundation | Workspace, packages, docs, CloudKit config, spike R-1 | MVP 0 | Completed (spike R-1 hardware run still pending, tracked under M4) |
 | 1 | TimerDomain | Events, Lamport, fold, state machine, calculator, arbitration, exhaustive tests. No UI, no persistence. | MVP 0 | Completed |
 | 2 | TaskDomain | Model, DayKey, services, repository protocols, tests | MVP 0 | Completed |
 | 3 | AppData (local) | SwiftData models, indexes, repositories, mapping, in-memory + migration tests. No CloudKit. | MVP 0 | Completed |
-| 4 | Convergence proof | CloudKit mirroring on; throwaway two-device shells (Mac + iPhone) doing nothing but start/pause/resume; F8 proven on real hardware, including two-offline-starts, supersession permanence and duplicate delivery; schema promoted | MVP 0 | Not Started |
-| 5 | macOS app | MenuBarExtra (primary), auxiliary task-hub window, Today, timer controls, quick-add, Pool search, preferences, AppFeature controllers, AppDesign v1 with adaptive surfaces | MVP 1 | Not Started |
-| 6 | iOS app | Tabs, Today, Pool, Timer, task editing, timer presets, expiry notification | MVP 1 | Not Started |
-| 7 | watchOS app | Standalone target, two screens, timer controls, R-1 re-measured; WC fast-path only if the numbers demand it | MVP 2 | Not Started |
-| 8 | Reliability | Conflict scenarios end-to-end, long-offline recovery, edge-case sweep, history + per-task totals (F9) | MVP 2 | Not Started |
+| 4 | Convergence proof | CloudKit mirroring on; throwaway two-device shells (Mac + iPhone) doing nothing but start/pause/resume; F8 proven on real hardware, including two-offline-starts, supersession permanence and duplicate delivery; schema promoted | MVP 0 | Construction half complete (container, tests, controller); hardware half — spike R-1, F8 on real devices, schema promotion — not started |
+| 5 | macOS app | MenuBarExtra (primary), auxiliary task-hub window, Today, timer controls, quick-add, Pool search, preferences, AppFeature controllers, AppDesign v1 with adaptive surfaces | MVP 1 | Completed |
+| 6 | iOS app | Tabs, Today, Pool, Timer, task editing, timer presets, expiry notification, Live Activities | MVP 1 | Completed |
+| 7 | watchOS app | Standalone target, two screens, timer controls | MVP 2 | Completed (R-1 re-measurement on real hardware and WC fast-path decision both still pending — same real-device dependency as spike R-1 under M4) |
+| 8 | Reliability | Conflict scenarios end-to-end, long-offline recovery, edge-case sweep, history + per-task totals (F9) | MVP 2 | F9 slice started (iOS time log + adjustments); reliability sweep not started |
 | 9 | Polish | Liquid Glass audit on 26+, material-fallback verification, layered app icon, accessibility pass | MVP 2 | Not Started |
 
 ---

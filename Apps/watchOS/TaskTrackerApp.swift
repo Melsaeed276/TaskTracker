@@ -1,9 +1,31 @@
 import SwiftUI
+import AppData
+import AppFeature
 
-// Milestone 0 skeleton. The watch app is built in Milestone 7.
 @main
 struct TaskTrackerWatchApp: App {
+    let timerController: ActiveTimerController
+    let todayController: TodayController
+    private let expiryRefreshLoop: ActiveTimerExpiryRefreshLoop
+
+    init() {
+        let isUITesting = ProcessInfo.processInfo.arguments.contains("--ui-testing")
+        let container = try! (
+            isUITesting
+            ? AppDataModelContainer.makeLocalInMemory()
+            : AppDataModelContainer.makeSynced()
+        )
+        let timerRepository = SwiftDataTimerEventRepository(modelContainer: container)
+        let taskRepository = SwiftDataTaskRepository(modelContainer: container)
+        timerController = ActiveTimerController(repository: timerRepository)
+        todayController = TodayController(repository: taskRepository)
+        expiryRefreshLoop = ActiveTimerExpiryRefreshLoop(timer: timerController)
+        expiryRefreshLoop.start()
+    }
+
     var body: some Scene {
-        WindowGroup { Text("TaskTracker") }
+        WindowGroup {
+            WatchRootView(timer: timerController, today: todayController)
+        }
     }
 }

@@ -17,5 +17,18 @@ public extension DayKey {
         let d = cal.component(.day, from: date)
         return DayKey(rawValue: String(format: "%04d-%02d-%02d", y, m, d))
     }
+
+    /// Best-effort conversion for date pickers. Invalid keys fall back to `Date()`.
+    func date(calendar: Calendar = .current) -> Date {
+        var cal = calendar
+        cal.locale = Locale(identifier: "en_US_POSIX")
+        let parts = rawValue.split(separator: "-").compactMap { Int($0) }
+        guard parts.count == 3 else { return Date() }
+        var comps = DateComponents()
+        comps.year = parts[0]
+        comps.month = parts[1]
+        comps.day = parts[2]
+        return cal.date(from: comps) ?? Date()
+    }
 }
 

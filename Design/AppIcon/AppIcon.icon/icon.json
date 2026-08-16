@@ -1,0 +1,63 @@
+{
+  "fill" : {
+    "automatic-gradient" : "extended-srgb:0.03529,0.16863,0.47059,1.00000"
+  },
+  "groups" : [
+    {
+      "layers" : [
+        {
+          "glass" : false,
+          "image-name" : "checkmark.svg",
+          "name" : "checkmark",
+          "position" : {
+            "scale" : 0.7,
+            "translation-in-points" : [
+              1,
+              -2
+            ]
+          }
+        },
+        {
+          "fill" : {
+            "solid" : "display-p3:0.62537,0.74971,0.96783,1.00000"
+          },
+          "glass" : false,
+          "image-name" : "clock-markers.svg",
+          "name" : "clock-markers"
+        },
+        {
+          "blend-mode" : "normal",
+          "image-name" : "timer-crown.svg",
+          "name" : "timer-crown",
+          "position" : {
+            "scale" : 1,
+            "translation-in-points" : [
+              0,
+              3
+            ]
+          }
+        },
+        {
+          "glass" : false,
+          "image-name" : "timer-ring.svg",
+          "name" : "timer-ring"
+        }
+      ],
+      "name" : "Timer System",
+      "shadow" : {
+        "kind" : "neutral",
+        "opacity" : 0.5
+      },
+      "translucency" : {
+        "enabled" : true,
+        "value" : 0.5
+      }
+    }
+  ],
+  "supported-platforms" : {
+    "circles" : [
+      "watchOS"
+    ],
+    "squares" : "shared"
+  }
+}

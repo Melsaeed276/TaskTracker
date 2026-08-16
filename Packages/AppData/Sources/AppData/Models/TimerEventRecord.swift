@@ -3,13 +3,17 @@ import SwiftData
 
 @Model
 public final class TimerEventRecord {
-    public var id: UUID
-    public var sessionID: UUID
-    public var kind: String
-    public var occurredAt: Date
-    public var deviceID: UUID
-    public var lamport: Int
-    public var schemaVersion: Int
+    // SwiftData's CloudKit validation only recognizes true Optionality, not a Swift init-parameter
+    // default — a non-optional stored property fails the mirroring contract even with `= value` in
+    // init. Every property is therefore Optional here; TimerEventMapping coalesces to the same
+    // defaults shown below when reading into the non-optional domain `TimerEvent`.
+    public var id: UUID?
+    public var sessionID: UUID?
+    public var kind: String?
+    public var occurredAt: Date?
+    public var deviceID: UUID?
+    public var lamport: Int?
+    public var schemaVersion: Int?
     public var duration: Double?
     public var relatedTaskID: UUID?
 

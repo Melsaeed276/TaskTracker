@@ -18,6 +18,7 @@ public enum TaskService: Sendable {
             createdAt: now,
             completedAt: nil,
             scheduledDay: nil,
+            priority: .none,
             updatedAt: now
         )
     }
@@ -34,7 +35,10 @@ public enum TaskService: Sendable {
         _ task: Task,
         title: String,
         notes: String?,
-        now: Date
+        now: Date,
+        scheduledDay: DayKey? = nil,
+        priority: TaskPriority = .none,
+        applyScheduleAndPriority: Bool = false
     ) throws -> Task {
         let trimmed = title.trimmingCharacters(in: .whitespacesAndNewlines)
         guard !trimmed.isEmpty else { throw TaskValidationError.emptyTitle }
@@ -42,6 +46,10 @@ public enum TaskService: Sendable {
         var t = task
         t.title = trimmed
         t.notes = notes
+        if applyScheduleAndPriority {
+            t.scheduledDay = scheduledDay
+            t.priority = priority
+        }
         t.updatedAt = max(task.updatedAt, now)
         return t
     }

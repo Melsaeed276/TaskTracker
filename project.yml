@@ -21,6 +21,7 @@ settings:
     SWIFT_UPCOMING_FEATURE_STRICT_CONCURRENCY: YES
     ENABLE_USER_SCRIPT_SANDBOXING: YES
     CODE_SIGN_STYLE: Automatic
+    DEVELOPMENT_TEAM: 925WW662VY
     GENERATE_INFOPLIST_FILE: YES
     MARKETING_VERSION: "0.1.0"
     CURRENT_PROJECT_VERSION: "1"
@@ -38,15 +39,19 @@ targets:
   TaskTracker-macOS:
     type: application
     platform: macOS
-    sources: [Apps/macOS]
+    sources:
+      - Apps/macOS
+      - Design/AppIcon/AppIcon.icon
     dependencies:
       - package: AppFeature
       - package: AppDesign
     settings:
       base:
-        PRODUCT_BUNDLE_IDENTIFIER: com.diwan.TaskTracker
+        PRODUCT_BUNDLE_IDENTIFIER: com.diwan.TaskTracker-mac
         PRODUCT_NAME: TaskTracker
         INFOPLIST_KEY_LSUIElement: YES
+        # CloudKit mirroring silent pushes (avoids the "remote-notification background mode" client bug).
+        INFOPLIST_KEY_UIBackgroundModes: remote-notification
         ENABLE_APP_SANDBOX: YES
         ENABLE_USER_SELECTED_FILES: readonly
     entitlements:
@@ -54,57 +59,133 @@ targets:
       properties:
         com.apple.developer.icloud-container-identifiers: [iCloud.com.diwan.TaskTracker]
         com.apple.developer.icloud-services: [CloudKit]
+        aps-environment: development
 
   # ── iOS ──
   TaskTracker-iOS:
     type: application
     platform: iOS
-    sources: [Apps/iOS]
+    sources:
+      - Apps/iOS
+      - path: Apps/Shared/LiveActivity
+      - Design/AppIcon/AppIcon.icon
     dependencies:
       - package: AppFeature
       - package: AppDesign
       - target: TaskTracker-watchOS
         embed: true
+      - target: TaskTracker-iOS-Widget
+        embed: true
     settings:
       base:
-        PRODUCT_BUNDLE_IDENTIFIER: com.diwan.TaskTracker
+        PRODUCT_BUNDLE_IDENTIFIER: com.diwan.TaskTracker.app
         PRODUCT_NAME: TaskTracker
         INFOPLIST_KEY_UILaunchScreen_Generation: YES
+        INFOPLIST_KEY_NSSupportsLiveActivities: YES
+        # Required for SwiftData↔CloudKit silent-push import.
+        INFOPLIST_KEY_UIBackgroundModes: remote-notification
         TARGETED_DEVICE_FAMILY: "1,2"
+    info:
+      path: Apps/iOS/Info.plist
+      properties:
+        CFBundleURLTypes:
+          - CFBundleTypeRole: Editor
+            CFBundleURLName: com.diwan.TaskTracker.app
+            CFBundleURLSchemes: [tasktracker]
+        UIBackgroundModes: [remote-notification]
     entitlements:
       path: Apps/iOS/TaskTracker-iOS.entitlements
       properties:
         com.apple.developer.icloud-container-identifiers: [iCloud.com.diwan.TaskTracker]
         com.apple.developer.icloud-services: [CloudKit]
+        aps-environment: development
+
+  TaskTracker-iOS-Widget:
+    type: app-extension
+    platform: iOS
+    sources:
+      - Apps/iOSWidget
+      - path: Apps/Shared/LiveActivity
+    settings:
+      base:
+        PRODUCT_BUNDLE_IDENTIFIER: com.diwan.TaskTracker.app.widget
+        PRODUCT_NAME: TaskTrackerWidget
+        INFOPLIST_FILE: Apps/iOSWidget/Info.plist
+        TARGETED_DEVICE_FAMILY: "1,2"
+        LD_RUNPATH_SEARCH_PATHS: "$(inherited) @executable_path/Frameworks @executable_path/../../Frameworks"
+    info:
+      path: Apps/iOSWidget/Info.plist
+      properties:
+        CFBundleDisplayName: TaskTracker
+        NSExtension:
+          NSExtensionPointIdentifier: com.apple.widgetkit-extension
+        NSSupportsLiveActivities: true
 
   # ── watchOS: standalone. Embedded in the iOS app for a single App Store
   #    record, but runs without the phone (see docs/ARCHITECTURE.md).
   TaskTracker-watchOS:
     type: application
     platform: watchOS
-    sources: [Apps/watchOS]
+    sources:
+      - Apps/watchOS
+      - Design/AppIcon/AppIcon.icon
     dependencies:
       - package: AppFeature
       - package: AppDesign
     settings:
       base:
-        PRODUCT_BUNDLE_IDENTIFIER: com.diwan.TaskTracker.watchkitapp
+        PRODUCT_BUNDLE_IDENTIFIER: com.diwan.TaskTracker.app.watch
         PRODUCT_NAME: TaskTracker
         INFOPLIST_KEY_WKRunsIndependentlyOfCompanionApp: YES
-        INFOPLIST_KEY_WKCompanionAppBundleIdentifier: com.diwan.TaskTracker
+        INFOPLIST_KEY_WKCompanionAppBundleIdentifier: com.diwan.TaskTracker.app
+        INFOPLIST_KEY_UIBackgroundModes: remote-notification
     entitlements:
       path: Apps/watchOS/TaskTracker-watchOS.entitlements
       properties:
         com.apple.developer.icloud-container-identifiers: [iCloud.com.diwan.TaskTracker]
         com.apple.developer.icloud-services: [CloudKit]
+        aps-environment: development
+
+  TaskTracker-macOS-UITests:
+    type: bundle.ui-testing
+    platform: macOS
+    sources:
+      - Apps/macOSUITests
+    dependencies:
+      - target: TaskTracker-macOS
+
+  TaskTracker-iOS-UITests:
+    type: bundle.ui-testing
+    platform: iOS
+    sources:
+      - Apps/iOSUITests
+    dependencies:
+      - target: TaskTracker-iOS
+
+  TaskTracker-watchOS-UITests:
+    type: bundle.ui-testing
+    platform: watchOS
+    sources:
+      - Apps/watchOSUITests
+    dependencies:
+      - target: TaskTracker-watchOS
 
 schemes:
   TaskTracker-macOS:
     build: { targets: { TaskTracker-macOS: all } }
+    test:
+      targets:
+        - TaskTracker-macOS-UITests
   TaskTracker-iOS:
     build: { targets: { TaskTracker-iOS: all } }
+    test:
+      targets:
+        - TaskTracker-iOS-UITests
   TaskTracker-watchOS:
     build: { targets: { TaskTracker-watchOS: all } }
+    test:
+      targets:
+        - TaskTracker-watchOS-UITests
 
 # Package unit tests run via `xcrun swift test` in each package directory.
 # See docs/TESTING.md.

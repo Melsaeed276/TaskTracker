@@ -1,0 +1,9 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 1024 1024">
+  <defs>
+    <linearGradient id="check" x1="376" y1="655" x2="696" y2="358" gradientUnits="userSpaceOnUse">
+      <stop stop-color="#8EE9F8"/>
+      <stop offset="1" stop-color="#F0FEFF"/>
+    </linearGradient>
+  </defs>
+  <path d="M373 505L471 603 664 393" fill="none" stroke="url(#check)" stroke-width="78" stroke-linecap="round" stroke-linejoin="round"/>
+</svg>

@@ -1,51 +1,77 @@
 import SwiftUI
 import AppData
+import AppDesign
 import AppFeature
 
 @main
 struct TaskTrackerIOSApp: App {
-    let controller: ActiveTimerController
+    let timerController: ActiveTimerController
+    let todayController: TodayController
+    let poolController: PoolController
+    private let timerEventRepository: SwiftDataTimerEventRepository
+    private let timeLogRepository: SwiftDataTaskTimeLogRepository
+    private let expiryRefreshLoop: ActiveTimerExpiryRefreshLoop
+    private let remoteChangeCoordinator: RemoteChangeCoordinator
 
     init() {
-        let container = try! AppDataModelContainer.makeLocalInMemory()
-        let repo = SwiftDataTimerEventRepository(modelContainer: container)
-        controller = ActiveTimerController(repository: repo)
+        let isUITesting = ProcessInfo.processInfo.arguments.contains("--ui-testing")
+        let container = try! (
+            isUITesting
+            ? AppDataModelContainer.makeLocalInMemory()
+            : AppDataModelContainer.makeSynced()
+        )
+        let timerRepo = SwiftDataTimerEventRepository(modelContainer: container)
+        let taskRepo = SwiftDataTaskRepository(modelContainer: container)
+        let timeLogRepo = SwiftDataTaskTimeLogRepository(modelContainer: container)
+        timerEventRepository = timerRepo
+        timeLogRepository = timeLogRepo
+        timerController = ActiveTimerController(
+            repository: timerRepo,
+            expiryNotifier: UserNotificationsTimerExpiryNotifier(),
+            liveActivity: ActivityKitTimerLiveActivityController()
+        )
+        todayController = TodayController(repository: taskRepo)
+        poolController = PoolController(repository: taskRepo)
+        expiryRefreshLoop = ActiveTimerExpiryRefreshLoop(timer: timerController)
+        expiryRefreshLoop.start()
+        remoteChangeCoordinator = RemoteChangeCoordinator(
+            timer: timerController,
+            today: todayController,
+            pool: poolController
+        )
     }
 
     var body: some Scene {
         WindowGroup {
-            TimerView(controller: controller)
+            RootTabView(
+                timer: timerController,
+                today: todayController,
+                pool: poolController,
+                makeTimeLog: { taskID in
+                    TaskTimeLogController(
+                        taskID: taskID,
+                        timerEvents: timerEventRepository,
+                        timeLog: timeLogRepository
+                    )
+                }
+            )
         }
     }
 }
 
-private struct TimerView: View {
-    let controller: ActiveTimerController
-
-    var body: some View {
-        VStack(spacing: 20) {
-            Text(controller.stateDescription)
-                .font(.largeTitle)
-
-            Button("Start") {
-                Task { await controller.start() }
-            }
-
-            Button(controller.isPaused ? "Resume" : "Pause") {
-                Task {
-                    if controller.isPaused {
-                        await controller.resume()
-                    } else {
-                        await controller.pause()
-                    }
-                }
-            }
-
-            Button("Stop") {
-                Task { await controller.stop() }
+@MainActor
+private final class RemoteChangeCoordinator {
+    init(timer: ActiveTimerController, today: TodayController, pool: PoolController) {
+        NotificationCenter.default.addObserver(
+            forName: AppDataModelContainer.remoteChangeNotification,
+            object: nil,
+            queue: .main
+        ) { _ in
+            Task { @MainActor in
+                await timer.reload()
+                await today.reload()
+                await pool.reload()
             }
         }
-        .padding()
-        .task { await controller.reload() }
     }
 }

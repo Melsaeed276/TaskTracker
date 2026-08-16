@@ -15,7 +15,7 @@ let package = Package(
         ),
         .testTarget(
             name: "AppFeatureTests",
-            dependencies: ["AppFeature", "AppData"],
+            dependencies: ["AppFeature", "AppData", "TaskDomain", "TimerDomain"],
             swiftSettings: [.swiftLanguageMode(.v6)]
         ),
     ]

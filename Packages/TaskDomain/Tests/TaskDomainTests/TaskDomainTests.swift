@@ -54,25 +54,36 @@ struct TaskDomainTests {
         #expect(t3.status == .completed)
     }
 
-    @Test("DayKey is a calendar fact (stable across timezone/DST changes)")
-    func dayKeyCalendarFact() {
-        // The key is an ISO day string computed at assignment time in the current calendar.
-        // After a timezone change, we do NOT recompute a different key for an already-scheduled task.
-        let instant = Date(timeIntervalSince1970: 1_750_000_000)
-
+    @Test("DayKey is assignment-calendar truth across timezone travel and DST boundaries")
+    func dayKeyCalendarFact() throws {
+        let instant = Date(timeIntervalSince1970: 1_754_704_800) // 2025-08-11T01:00:00Z
         var tokyo = Calendar(identifier: .gregorian)
         tokyo.timeZone = TimeZone(identifier: "Asia/Tokyo")!
-
         var la = Calendar(identifier: .gregorian)
         la.timeZone = TimeZone(identifier: "America/Los_Angeles")!
 
-        let keyAtAssignment = DayKey.from(date: instant, calendar: tokyo)
-        let recomputedElsewhere = DayKey.from(date: instant, calendar: la)
+        let tokyoDay = DayKey.from(date: instant, calendar: tokyo)
+        let laDay = DayKey.from(date: instant, calendar: la)
+        #expect(tokyoDay.rawValue == "2025-08-09")
+        #expect(laDay.rawValue == "2025-08-08")
+        #expect(tokyoDay != laDay)
 
-        // These may differ; that's expected because "today" depends on local calendar at assignment time.
-        // Stability is that the stored key doesn't change when the device timezone changes.
-        #expect(DayKey(rawValue: keyAtAssignment.rawValue) == keyAtAssignment)
-        #expect(keyAtAssignment.rawValue.count == 10)
-        #expect(recomputedElsewhere.rawValue.count == 10)
+        // A task scheduled while in Tokyo keeps that stored day key after a timezone change.
+        let created = try TaskService.create(title: "Timezone-stable", now: instant)
+        let scheduledInTokyo = TaskService.scheduleForToday(created, now: instant, calendar: tokyo)
+        #expect(scheduledInTokyo.scheduledDay == tokyoDay)
+        #expect(scheduledInTokyo.scheduledDay != laDay)
+
+        // DST spring-forward in New York: local "day" stays stable across the missing hour.
+        var ny = Calendar(identifier: .gregorian)
+        ny.timeZone = TimeZone(identifier: "America/New_York")!
+        let beforeJump = ny.date(from: DateComponents(
+            year: 2026, month: 3, day: 8, hour: 1, minute: 59
+        ))!
+        let afterJump = ny.date(from: DateComponents(
+            year: 2026, month: 3, day: 8, hour: 3, minute: 1
+        ))!
+        #expect(DayKey.from(date: beforeJump, calendar: ny).rawValue == "2026-03-08")
+        #expect(DayKey.from(date: afterJump, calendar: ny).rawValue == "2026-03-08")
     }
 }

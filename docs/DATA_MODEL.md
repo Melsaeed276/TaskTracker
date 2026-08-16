@@ -20,23 +20,58 @@ The persistence model for tasks. Maps 1:1 to the `Task` domain model via `AppDat
 
 | Field | Type | Notes |
 |---|---|---|
-| `id` | `UUID` | Primary identifier. Always present. |
-| `title` | `String` | Required, non-empty after trimming. |
-| `notes` | `String` | Optional. |
-| `createdAt` | `Date` | When the task was created. |
+| `id` | `UUID?` | Primary identifier. `AppData`'s `TaskMapping` coalesces `nil` to a fresh `UUID()`, which cannot happen for a record that has ever round-tripped through `upsert`. |
+| `title` | `String?` | Required, non-empty after trimming, at the domain layer. Coalesces to `""`. |
+| `notes` | `String?` | Optional. |
+| `createdAt` | `Date?` | When the task was created. Coalesces to `.distantPast`. |
 | `completedAt` | `Date?` | `nil` when incomplete. Completion is derived: `completedAt != nil` (plan §9). |
 | `scheduledDay` | `String?` | ISO `yyyy-MM-dd` day key, or `nil` for Pool (plan §9). |
-| `updatedAt` | `Date` | Last modification timestamp. Monotonic per device. |
+| `priority` | `Int?` | Raw `TaskPriority` (`0` none … `3` high). `nil` coalesces to `.none`. |
+| `updatedAt` | `Date?` | Last modification timestamp. Monotonic per device. Coalesces to `.distantPast`. |
 
 ### CloudKit constraints
 
-- All properties are optional or defaulted — required by the CloudKit contract (plan §13).
+- **Every stored property on the `@Model` is genuinely `Optional` (`?`), not just optional-or-defaulted
+  at the Swift `init` level.** SwiftData's CloudKit mirroring validation checks true Optionality in
+  the generated schema; a non-optional property with only a Swift init default (`id: UUID = UUID()`)
+  still fails the contract at `ModelContainer` construction time with `SwiftDataError.loadIssueModelContainer`
+  — this shipped broken from Milestone 3 through Milestone 5 because the app was only ever run against
+  `makeLocalInMemory()` until 2026-08-14, when actually launching against `.makeSynced()` for the first
+  time crashed immediately. Fixed 2026-08-14; see `memory.md`. The domain-facing `Task` struct stays
+  non-optional — `TaskMapping.toDomain` coalesces every `nil` to the same default the old Swift
+  init used.
 - No unique attributes (CloudKit sync does not support `@Attribute(.unique)`).
 - No relationships to `TimerEventRecord` — associations are UUID fields resolved in `AppData` (plan §11, §14).
 
 ### Association to timer events
 
-The link between tasks and timer sessions is expressed as `TimerEventRecord.relatedTaskID: UUID?` on the timer side. There is no reverse link from `TaskRecord` to timer events. Per-task totals (F9) are computed by querying timer events by `relatedTaskID` and projecting each session (plan §11, §28).
+The link between tasks and timer sessions is expressed as `TimerEventRecord.relatedTaskID: UUID?` on the timer side. There is no reverse link from `TaskRecord` to timer events. Per-task totals (F9) are computed by querying timer events by `relatedTaskID` and projecting each session (plan §11, §28). Manual corrections use synced `TaskTimeAdjustmentRecord` / `TaskSessionExclusionRecord` — never by mutating timer events.
+
+---
+
+## TaskTimeAdjustmentRecord
+
+Manual time added to a task’s spent total. Synced; CloudKit-safe optionals.
+
+| Field | Type | Notes |
+|---|---|---|
+| `id` | `UUID?` | Adjustment identity. |
+| `taskID` | `UUID?` | Soft link to `TaskRecord.id`. |
+| `durationSeconds` | `Double?` | Positive duration contributed to the total. |
+| `note` | `String?` | Optional user note. |
+| `occurredAt` | `Date?` | When the work is attributed. |
+| `createdAt` / `updatedAt` | `Date?` | Audit timestamps. |
+
+## TaskSessionExclusionRecord
+
+Hides one projected timer session from a task’s log total without deleting events.
+
+| Field | Type | Notes |
+|---|---|---|
+| `id` | `UUID?` | Exclusion identity. |
+| `taskID` | `UUID?` | Soft link to the task. |
+| `sessionID` | `UUID?` | Soft link to the timer session. |
+| `createdAt` | `Date?` | When excluded. |
 
 ---
 
@@ -46,13 +81,13 @@ The persistence model for timer events. Maps 1:1 to the `TimerEvent` domain mode
 
 | Field | Type | Notes |
 |---|---|---|
-| `id` | `UUID` | Primary identifier. Deduplication key (plan §10, §28). |
-| `sessionID` | `UUID` | Groups events into sessions. All events in one session share this ID. |
-| `kind` | `String` | Event kind as a string, not enum raw value. Unknown kinds are skipped, never deleted (plan §10). |
-| `occurredAt` | `Date` | UTC timestamp of when the event occurred. |
-| `deviceID` | `String` | Identifies the authoring device. Final tiebreak in arbitration (plan §20). |
-| `lamport` | `Int` | Lamport counter, stamped at authoring time. Encodes causality within a session (plan §10). |
-| `schemaVersion` | `Int` | Schema version of the authoring build. Forward compatibility marker (plan §10). |
+| `id` | `UUID?` | Primary identifier. Deduplication key (plan §10, §28). Coalesces to a fresh `UUID()`. |
+| `sessionID` | `UUID?` | Groups events into sessions. All events in one session share this ID. Coalesces to a fresh `UUID()`. |
+| `kind` | `String?` | Event kind as a string, not enum raw value. Unknown kinds are skipped, never deleted (plan §10). Coalesces to `""`. |
+| `occurredAt` | `Date?` | UTC timestamp of when the event occurred. Coalesces to `.distantPast`. |
+| `deviceID` | `UUID?` | Identifies the authoring device. Final tiebreak in arbitration (plan §20). Coalesces to a fresh `UUID()`. |
+| `lamport` | `Int?` | Lamport counter, stamped at authoring time. Encodes causality within a session (plan §10). Coalesces to `0`. |
+| `schemaVersion` | `Int?` | Schema version of the authoring build. Forward compatibility marker (plan §10). Coalesces to `0`. |
 | `duration` | `Double?` | Duration in seconds. Only present on `.started` events. Immutable for the session's lifetime. |
 | `relatedTaskID` | `UUID?` | Optional task reference. Only present on `.started` events. Immutable for the session's lifetime. |
 
@@ -70,7 +105,8 @@ There is deliberately no `"finished"` kind — expiry is derived, never an event
 
 ### CloudKit constraints
 
-- All properties are optional or defaulted — same contract as `TaskRecord` (plan §13).
+- All properties are genuinely `Optional` at the `@Model` level — same contract as `TaskRecord`,
+  see its "CloudKit constraints" note above (plan §13).
 - No unique attributes. Deduplication by `id` is handled in the fold (plan §10).
 - No relationships to `TaskRecord`. The `relatedTaskID` is a plain UUID.
 

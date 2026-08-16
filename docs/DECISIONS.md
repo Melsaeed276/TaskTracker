@@ -779,3 +779,31 @@ rollback.
 
 See [`DESIGN_SYSTEM.md`](DESIGN_SYSTEM.md), [`ARCHITECTURE.md`](ARCHITECTURE.md), and
 [`TESTING.md`](TESTING.md).
+
+---
+
+## ADR 015 — Per-task time adjustments without rewriting the timer log
+
+### Decision
+
+Per-task history totals project immutable timer sessions by `relatedTaskID`. Manual add/edit/delete
+of spent time uses synced `TaskTimeAdjustment` rows. Hiding a session from a task’s total uses
+`TaskSessionExclusion`. Timer events remain append-only.
+
+### Date
+
+2026-08-16
+
+### Status
+
+Accepted
+
+### Context
+
+Users need a task time log with totals and corrections (F9). Mutating or deleting `TimerEvent` rows
+would break CloudKit merge semantics and the fold.
+
+### Consequences
+
+- `TaskTimeLogController` owns projection + adjustment/exclusion CRUD.
+- Today UI omits completed tasks; Pool Completed filter is the reopen surface.

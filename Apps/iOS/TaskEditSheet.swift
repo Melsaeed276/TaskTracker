@@ -214,23 +214,6 @@ struct TaskEditSheet: View {
             .navigationTitle("Edit Task")
             .navigationBarTitleDisplayMode(.inline)
             .navigationSurface()
-            .safeAreaInset(edge: .bottom, spacing: AppSpacing.s) {
-                VStack(spacing: AppSpacing.s) {
-                    Button(action: save) {
-                        Text("Save")
-                            .font(.headline.weight(.semibold))
-                            .frame(maxWidth: .infinity)
-                    }
-                    .buttonStyle(.borderedProminent)
-                    .controlSize(.large)
-                    .disabled(!canSave)
-                    .accessibilityIdentifier("taskEdit.saveButton")
-                }
-                .padding(.horizontal, AppSpacing.m)
-                .padding(.top, AppSpacing.s)
-                .padding(.bottom, AppSpacing.s)
-                .background(.bar)
-            }
             .confirmationDialog(
                 "Delete this task?",
                 isPresented: $isConfirmingDelete,
@@ -252,6 +235,11 @@ struct TaskEditSheet: View {
             .toolbar {
                 ToolbarItem(placement: .cancellationAction) {
                     Button("Cancel") { dismiss() }
+                }
+                ToolbarItem(placement: .confirmationAction) {
+                    Button("Save") { save() }
+                        .disabled(!canSave)
+                        .accessibilityIdentifier("taskEdit.saveButton")
                 }
             }
             .scrollDismissesKeyboard(.interactively)

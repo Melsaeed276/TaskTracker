@@ -200,13 +200,14 @@ struct TaskEditSheet: View {
 
                 if onDelete != nil {
                     Section {
-                        Button(role: .destructive) {
-                            isConfirmingDelete = true
-                        } label: {
-                            Label("Delete Task", systemImage: AppSymbols.Tasks.delete)
-                                .frame(maxWidth: .infinity)
-                        }
-                        .accessibilityIdentifier("taskEdit.deleteButton")
+                    Button(role: .destructive) {
+                        isConfirmingDelete = true
+                    } label: {
+                        Label("Delete Task", systemImage: AppSymbols.Tasks.delete)
+                            .foregroundStyle(.red)
+                            .frame(maxWidth: .infinity)
+                    }
+                    .accessibilityIdentifier("taskEdit.deleteButton")
                     }
                 }
             }
@@ -251,15 +252,6 @@ struct TaskEditSheet: View {
             .toolbar {
                 ToolbarItem(placement: .cancellationAction) {
                     Button("Cancel") { dismiss() }
-                }
-                ToolbarItemGroup(placement: .keyboard) {
-                    Spacer()
-                    Button("Save") {
-                        focusedField = nil
-                        save()
-                    }
-                    .fontWeight(.semibold)
-                    .disabled(!canSave)
                 }
             }
             .scrollDismissesKeyboard(.interactively)

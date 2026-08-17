@@ -41,6 +41,7 @@ Liquid Glass differs **structurally**, not only visually. `GlassEffectContainer`
 | `SurfaceGroup { }` | `GlassEffectContainer { }` | passthrough container |
 | `AppToolbar { }` | grouped items + `ToolbarSpacer` | conventional `ToolbarItemGroup` |
 | `AppTabView { }` | `.tabViewStyle(.sidebarAdaptable)` + `.tabBarMinimizeBehavior(.onScrollDown)` | iOS 18–25: `.tabViewStyle(.sidebarAdaptable)`, no minimize. iOS 17 (true floor): plain `TabView` |
+| iOS Add/search task affordance | `Tab(role: .search)` with the outline `plus.rectangle` SF Symbol and `.tabViewSearchActivation(.searchTabSelection)` so the tab-bar item morphs into the system search field; the Add page icon uses Draw On when available | iOS 18–25: search-role tab opens the add/search tab content with a static `plus.rectangle` outline. iOS 17: separated circular Add button opens the same quick-entry surface |
 | `.contentScrollEdge()` | `.scrollEdgeEffectStyle(.hard, for: .top)` | no-op |
 
 **`AppTabView` is a three-way seam, not two-way** — `.tabViewStyle(.sidebarAdaptable)` (iPhone tabs,
@@ -49,7 +50,11 @@ iOS 18 it degrades further to a plain `TabView` (iPhone gets a conventional tab 
 sidebar). Feature code still only ever calls `AppTabView { }` — never an `#available` check of its
 own — the component internally nests the iOS-18 check inside the 26+ check.
 
-This confines the entire dual-appearance problem to one package, keeps the branching out of every feature, and makes deleting the fallback when the floor eventually rises a single-package change (plan §26).
+This confines most dual-appearance branching to one package, keeps ordinary feature code from
+probing OS versions, and makes deleting fallbacks straightforward when the floor eventually rises
+(plan §26). The iOS root tab shell is the one deliberate app-level exception: SwiftUI's native
+`Tab(role: .search)` cannot be abstracted by `AppTabView`'s `View`-builder wrapper without losing the
+system tab-bar search morph, so `RootTabView` owns that availability seam directly.
 
 ---
 
@@ -242,19 +247,21 @@ automatic system menu-bar tinting and reliable `MenuBarExtra` rendering without 
 - iPhone gets tabs; iPad gets a sidebar, from iOS 18 (plan §22).
 - Generous touch targets (minimum 44pt).
 - Swipe actions for quick operations (Pool→Today).
-- Today and Pool use a shared bottom quick-entry control instead of an inline list row. It sits in the
-  bottom safe area above the tab bar, rises above the keyboard when focused, and shows existing-task
-  suggestions above the field like iPhone Spotlight. This keeps capture thumb-reachable while preserving
-  the task list as content.
+- Today and Pool share a Spotlight-style add/search flow. On iOS 18+ it is exposed as a native
+  `Tab(role: .search)` item labelled **Add** with the outline `plus.rectangle` SF Symbol; on iOS 26+ selecting
+  it activates the system tab-bar search morph, and the Add page repeats the symbol with Draw On motion
+  as the page opens. The search tab keeps the tab bar navigational while using Apple's dedicated
+  search-role affordance instead of a custom action tab. iOS 17 falls back to a separated circular
+  **Add** button that opens the same quick-entry surface with the same static symbol. Submitting from
+  Today schedules the task for Today; submitting from Pool or other tabs adds to the active Pool.
+  Existing-task suggestions schedule for Today when launched from Today and open the Pool task detail
+  otherwise.
 - Task editing as a sheet (title, notes, scheduled day, priority, start-timer-for-task, **Time Spent**
   log with total / add-edit-delete adjustments / hide session from total, full-width Save + Delete).
   Completing a Today task removes it from the Today list immediately; reopen from Pool → Completed.
   Pool supports Active / Completed show modes and sort (newest, oldest, title, priority).
-  The active timer strip is **app-wide** (bottom safe-area inset on Today / Pool / Settings content —
-  above the tab bar, never over it): countdown, pause/resume, stop, jump to Timer, and jump to the
-  linked task when `relatedTaskID` is set. Hidden on the Timer tab (full controls live there). While
-  the linked task’s edit sheet is open, the same strip appears **inside the sheet** without the Open
-  Task control (already on that task).
+  Active timer controls are not duplicated as an app-wide strip on non-Timer tabs; per-second countdown
+  UI stays on the Timer screen and in task-specific timer controls.
 - The iPhone Timer tab is a fixed, non-scrolling control surface. The large time face owns the upper
   content area; setup and actions live in the lower thumb zone near the tab bar.
 - Timer setup is bottom-first: when idle in Timer mode, a compact setup dock sits directly above the

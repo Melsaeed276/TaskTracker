@@ -12,9 +12,8 @@ final class TaskTrackerIOSUITests: XCTestCase {
     }
 
     func testTodayQuickAddShowsTask() throws {
-        let field = app.textFields["today.newTaskField"]
-        XCTAssertTrue(field.waitForExistence(timeout: 5))
-        field.tap()
+        openQuickEntry()
+        let field = quickEntryField()
         field.typeText("Today regression task\n")
 
         XCTAssertTrue(app.staticTexts["Today regression task"].waitForExistence(timeout: 5))
@@ -23,12 +22,10 @@ final class TaskTrackerIOSUITests: XCTestCase {
     func testPoolQuickAddKeepsAllTasksVisible() throws {
         openTab(named: "Pool")
 
-        let field = app.textFields["pool.newTaskField"]
-        XCTAssertTrue(field.waitForExistence(timeout: 5))
-
         let titles = ["Pool one", "Pool two", "Pool three"]
         for title in titles {
-            field.tap()
+            openQuickEntry()
+            let field = quickEntryField()
             field.typeText("\(title)\n")
         }
 
@@ -105,9 +102,8 @@ final class TaskTrackerIOSUITests: XCTestCase {
     }
 
     func testEditSheetDeleteTaskIsInFormBody() throws {
-        let field = app.textFields["today.newTaskField"]
-        XCTAssertTrue(field.waitForExistence(timeout: 5))
-        field.tap()
+        openQuickEntry()
+        let field = quickEntryField()
         field.typeText("Delete placement task\n")
 
         let title = app.staticTexts["Delete placement task"]
@@ -212,5 +208,30 @@ final class TaskTrackerIOSUITests: XCTestCase {
         let fallback = app.buttons[name].firstMatch
         XCTAssertTrue(fallback.waitForExistence(timeout: 5))
         fallback.tap()
+    }
+
+    private func openQuickEntry() {
+        let addTab = app.tabBars.buttons["Add"]
+        if addTab.waitForExistence(timeout: 3) {
+            addTab.tap()
+            return
+        }
+
+        let fallbackButton = app.buttons["root.addTaskButton"]
+        XCTAssertTrue(fallbackButton.waitForExistence(timeout: 5))
+        fallbackButton.tap()
+    }
+
+    private func quickEntryField() -> XCUIElement {
+        let nativeSearchField = app.searchFields.firstMatch
+        if nativeSearchField.waitForExistence(timeout: 3) {
+            nativeSearchField.tap()
+            return nativeSearchField
+        }
+
+        let fallbackField = app.textFields["root.quickTaskField"]
+        XCTAssertTrue(fallbackField.waitForExistence(timeout: 5))
+        fallbackField.tap()
+        return fallbackField
     }
 }

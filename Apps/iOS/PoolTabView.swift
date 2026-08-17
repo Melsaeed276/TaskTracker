@@ -12,7 +12,6 @@ struct PoolTabView: View {
     var makeTimeLog: ((UUID) -> TaskTimeLogController)?
     var onStartedTimer: (() -> Void)? = nil
     var onOpenTimerTab: (() -> Void)? = nil
-    @State private var draft = ""
     @State private var editingTask: Task?
 
     var body: some View {
@@ -30,23 +29,6 @@ struct PoolTabView: View {
                     ForEach(pool.visibleTasks) { task in
                         poolRow(task)
                     }
-                }
-            }
-            .safeAreaInset(edge: .bottom, spacing: 0) {
-                if pool.showMode == .active {
-                    TaskQuickEntryView(
-                        placeholder: "Add or search task",
-                        draft: $draft,
-                        suggestions: matchingActiveTasks,
-                        onSubmit: { title in
-                            Swift.Task { await pool.quickAdd(title: title) }
-                        },
-                        onSelectSuggestion: { task in
-                            draft = ""
-                            editingTask = task
-                        }
-                    )
-                    .accessibilityIdentifier("pool.newTaskField")
                 }
             }
             .listStyle(.insetGrouped)
@@ -258,18 +240,6 @@ struct PoolTabView: View {
                 Label("Delete", systemImage: AppSymbols.Tasks.delete)
             }
         }
-    }
-
-    private var matchingActiveTasks: [Task] {
-        let query = normalized(draft)
-        guard !query.isEmpty else { return [] }
-        return pool.tasks.filter {
-            !$0.isCompleted && normalized($0.title).contains(query)
-        }
-    }
-
-    private func normalized(_ title: String) -> String {
-        title.trimmingCharacters(in: .whitespacesAndNewlines).localizedLowercase
     }
 
     private func presentTaskIfNeeded(_ id: UUID?) {

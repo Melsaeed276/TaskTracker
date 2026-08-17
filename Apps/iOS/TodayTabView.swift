@@ -14,7 +14,6 @@ struct TodayTabView: View {
     var onStartedTimer: (() -> Void)? = nil
     var onOpenTimerTab: (() -> Void)? = nil
     var onOpenPoolTab: (() -> Void)? = nil
-    @State private var draft = ""
     @State private var editingTask: Task?
 
     var body: some View {
@@ -31,29 +30,8 @@ struct TodayTabView: View {
                     }
                 }
             }
-            .safeAreaInset(edge: .bottom, spacing: 0) {
-                TaskQuickEntryView(
-                    placeholder: "Add or search task",
-                    draft: $draft,
-                    suggestions: matchingActiveTasks,
-                    onSubmit: { title in
-                        Swift.Task {
-                            await today.quickAdd(title: title)
-                            await pool.reload()
-                        }
-                    },
-                    onSelectSuggestion: { task in
-                        draft = ""
-                        Swift.Task {
-                            await today.scheduleForToday(task)
-                            await pool.reload()
-                        }
-                    }
-                )
-                .accessibilityIdentifier("today.newTaskField")
-            }
             .overlay {
-                if today.tasks.isEmpty && draft.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty {
+                if today.tasks.isEmpty {
                     TodayEmptyState(onOpenPoolTab: onOpenPoolTab)
                 }
             }
@@ -105,17 +83,6 @@ struct TodayTabView: View {
         taskIDToPresent = nil
     }
 
-    private var matchingActiveTasks: [Task] {
-        let query = normalized(draft)
-        guard !query.isEmpty else { return [] }
-        return pool.tasks.filter {
-            !$0.isCompleted && normalized($0.title).contains(query)
-        }
-    }
-
-    private func normalized(_ title: String) -> String {
-        title.trimmingCharacters(in: .whitespacesAndNewlines).localizedLowercase
-    }
 }
 
 private struct TodayEmptyState: View {

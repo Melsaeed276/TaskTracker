@@ -6,6 +6,8 @@ struct TaskQuickEntryView: View {
     let placeholder: String
     @Binding var draft: String
     let suggestions: [Task]
+    var textFieldIdentifier: String = ""
+    var focusOnAppear = false
     let onSubmit: (String) -> Void
     let onSelectSuggestion: (Task) -> Void
     @FocusState private var isFocused: Bool
@@ -22,6 +24,7 @@ struct TaskQuickEntryView: View {
                     .font(.headline)
 
                 TextField(placeholder, text: $draft)
+                    .accessibilityIdentifier(textFieldIdentifier)
                     .submitLabel(.done)
                     .focused($isFocused)
                     .onSubmit(submitDraft)
@@ -51,6 +54,11 @@ struct TaskQuickEntryView: View {
         .padding(.bottom, AppSpacing.s)
         .animation(.snappy(duration: AppDuration.normal), value: isFocused)
         .animation(.snappy(duration: AppDuration.normal), value: suggestions.map(\.id))
+        .task(id: focusOnAppear) {
+            guard focusOnAppear else { return }
+            await Swift.Task.yield()
+            isFocused = true
+        }
     }
 
     private var suggestionsView: some View {

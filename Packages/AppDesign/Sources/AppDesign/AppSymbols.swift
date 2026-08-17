@@ -20,6 +20,7 @@ public enum AppSymbols {
         public static let today = "calendar.badge.plus"
         public static let pool = "rectangle.stack.badge.plus"
         public static let timer = "timer"
+        public static let addTask = "plus.rectangle"
         public static let settings = "gearshape"
         public static let taskHub = "checklist"
     }

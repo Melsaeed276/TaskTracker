@@ -247,9 +247,6 @@ struct TaskEditSheet: View {
                     timeLog = makeTimeLog?(task.id)
                 }
                 await timeLog?.reload()
-                if !isLinkedActiveTimer {
-                    focusedField = .title
-                }
             }
             .onChange(of: isScheduled) { _, scheduled in
                 if scheduled, draft.scheduledDay == nil {

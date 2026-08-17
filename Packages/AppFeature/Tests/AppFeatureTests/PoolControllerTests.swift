@@ -110,7 +110,7 @@ struct PoolControllerTests {
         let task = try #require(controller.tasks.first)
 
         await controller.archive(task)
-        #expect(controller.tasks.isEmpty)
+        #expect(controller.visibleTasks.isEmpty)
     }
 
     @Test("delete removes the task")
@@ -171,8 +171,53 @@ struct PoolControllerTests {
         #expect(controller.visibleTasks.map(\.title) == ["Alpha", "Zebra"])
 
         await controller.uncomplete(controller.visibleTasks[0])
-        controller.showMode = .active
+        controller.showMode = .allTasks
         await controller.reload()
         #expect(controller.tasks.contains { $0.title == "Alpha" })
+    }
+
+    @Test("pool cards filter today, all tasks, archived, and completed")
+    @MainActor
+    func cardFilters() async throws {
+        let (controller, repo, time) = try makeController()
+        await controller.quickAdd(title: "Inbox")
+        await controller.quickAdd(title: "Today")
+        await controller.quickAdd(title: "Done")
+
+        let today = try #require(controller.tasks.first { $0.title == "Today" })
+        let done = try #require(controller.tasks.first { $0.title == "Done" })
+        var calendar = Calendar(identifier: .gregorian)
+        calendar.timeZone = TimeZone(secondsFromGMT: 0)!
+        try await repo.upsert(TaskService.scheduleForToday(today, now: time.now, calendar: calendar))
+        try await repo.upsert(try TaskService.complete(done, now: time.now))
+        await controller.reload()
+
+        controller.showMode = .today
+        #expect(controller.visibleTasks.map(\.title) == ["Today"])
+
+        controller.showMode = .allTasks
+        #expect(controller.visibleTasks.map(\.title).sorted() == ["Inbox", "Today"])
+
+        controller.showMode = .archived
+        #expect(controller.visibleTasks.map(\.title) == ["Done"])
+
+        controller.showMode = .completed
+        #expect(controller.visibleTasks.map(\.title) == ["Done"])
+    }
+
+    @Test("unscheduled tasks preserve macOS Pool semantics")
+    @MainActor
+    func unscheduledTasks() async throws {
+        let (controller, repo, time) = try makeController()
+        await controller.quickAdd(title: "Inbox")
+        await controller.quickAdd(title: "Today")
+
+        let today = try #require(controller.tasks.first { $0.title == "Today" })
+        var calendar = Calendar(identifier: .gregorian)
+        calendar.timeZone = TimeZone(secondsFromGMT: 0)!
+        try await repo.upsert(TaskService.scheduleForToday(today, now: time.now, calendar: calendar))
+        await controller.reload()
+
+        #expect(controller.unscheduledTasks.map(\.title) == ["Inbox"])
     }
 }

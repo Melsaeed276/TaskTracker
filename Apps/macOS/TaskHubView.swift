@@ -319,7 +319,7 @@ private struct PoolPane: View {
                 .font(.caption)
                 .foregroundStyle(.secondary)
 
-            List(pool.visibleTasks) { task in
+            List(pool.unscheduledTasks) { task in
                 PoolRow(task: task, pool: pool, today: today, timer: timer)
                     .padding(.vertical, AppSpacing.xs)
             }

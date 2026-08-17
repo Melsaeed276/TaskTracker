@@ -77,6 +77,12 @@ Still outstanding:
 
 # Active Work
 
+**2026-08-18 — Pool improvements branch.** Branch `feature/pool-improvements` redesigns the iOS Pool
+screen around Reminders-style category cards: Today, All Tasks, Archived, and Completed. The controller
+now loads one all-task snapshot and filters `visibleTasks` by selected card, with counts per category
+and existing sort orders preserved. Archived currently maps to completed tasks because the domain model
+still has no separate archived field.
+
 **2026-08-17 — iOS native tab-bar Add/search branch.** Branch `feature/ios-tabbar-add-task` keeps
 the tab bar navigational by using SwiftUI's native `Tab(role: .search)` Add item on iOS 18+ with the
 outline `plus.rectangle` SF Symbol; on iOS 26+ the tab-bar item activates the system search-field morph via

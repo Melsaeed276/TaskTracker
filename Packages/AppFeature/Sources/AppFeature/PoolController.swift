@@ -2,14 +2,18 @@ import Foundation
 import TaskDomain
 
 public enum PoolShowMode: String, Sendable, CaseIterable, Identifiable {
-    case active
+    case today
+    case allTasks
+    case archived
     case completed
 
     public var id: String { rawValue }
 
     public var displayName: String {
         switch self {
-        case .active: return "Active"
+        case .today: return "Today"
+        case .allTasks: return "All Tasks"
+        case .archived: return "Archived"
         case .completed: return "Completed"
         }
     }
@@ -38,23 +42,51 @@ public enum PoolSortOrder: String, Sendable, CaseIterable, Identifiable {
 public final class PoolController {
     public private(set) var tasks: [Task] = []
     public var searchText: String = ""
-    public var showMode: PoolShowMode = .active
+    public var showMode: PoolShowMode = .allTasks
     public var sortOrder: PoolSortOrder = .createdNewest
 
     public var visibleTasks: [Task] {
-        let filtered: [Task]
-        let query = searchText.trimmingCharacters(in: .whitespacesAndNewlines)
-        if query.isEmpty {
-            filtered = tasks
-        } else {
-            filtered = tasks.filter { $0.title.localizedCaseInsensitiveContains(query) }
+        let modeFiltered = tasks.filter { task in
+            switch showMode {
+            case .today:
+                return !task.isCompleted && task.scheduledDay == DayKey.from(date: timeSource.now, calendar: calendar)
+            case .allTasks:
+                return !task.isCompleted
+            case .archived, .completed:
+                return task.isCompleted
+            }
         }
-        return Self.sorted(filtered, by: sortOrder)
+        return filteredAndSorted(modeFiltered)
+    }
+
+    public var unscheduledTasks: [Task] {
+        filteredAndSorted(tasks.filter { !$0.isCompleted && $0.scheduledDay == nil })
+    }
+
+    public func count(for mode: PoolShowMode) -> Int {
+        tasks.filter { task in
+            switch mode {
+            case .today:
+                return !task.isCompleted && task.scheduledDay == DayKey.from(date: timeSource.now, calendar: calendar)
+            case .allTasks:
+                return !task.isCompleted
+            case .archived, .completed:
+                return task.isCompleted
+            }
+        }.count
     }
 
     private let repository: any TaskRepository
     private let timeSource: any TimeSource
     private let calendar: Calendar
+
+    private func filteredAndSorted(_ source: [Task]) -> [Task] {
+        let query = searchText.trimmingCharacters(in: .whitespacesAndNewlines)
+        let filtered: [Task]
+        if query.isEmpty { filtered = source }
+        else { filtered = source.filter { $0.title.localizedCaseInsensitiveContains(query) } }
+        return Self.sorted(filtered, by: sortOrder)
+    }
 
     public init(
         repository: any TaskRepository,
@@ -68,12 +100,7 @@ public final class PoolController {
 
     public func reload() async {
         do {
-            switch showMode {
-            case .active:
-                tasks = try await repository.poolTasks()
-            case .completed:
-                tasks = try await repository.completedTasks()
-            }
+            tasks = try await repository.allTasks()
         } catch {
             tasks = []
         }
@@ -82,14 +109,14 @@ public final class PoolController {
     public func quickAdd(title: String) async {
         do {
             if try await existingActiveTask(titled: title) != nil {
-                showMode = .active
+                showMode = .allTasks
                 await reload()
                 return
             }
 
             let created = try TaskService.create(title: title, now: timeSource.now)
             try await repository.upsert(created)
-            showMode = .active
+            showMode = .allTasks
             await reload()
         } catch { return }
     }

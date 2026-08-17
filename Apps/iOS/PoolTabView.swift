@@ -16,58 +16,34 @@ struct PoolTabView: View {
 
     var body: some View {
         NavigationStack {
-            List {
-                if pool.showMode == .active {
-                    Section {
-                        Text("All active tasks live here, including Today tasks.")
-                            .font(.footnote)
-                            .foregroundStyle(.secondary)
-                    }
-                }
-
-                Section {
-                    ForEach(pool.visibleTasks) { task in
-                        poolRow(task)
-                    }
-                }
-            }
-            .listStyle(.insetGrouped)
-            .navigationTitle("Pool")
-            .searchable(text: $pool.searchText, prompt: "Search Pool")
-            .toolbar {
-                ToolbarItem(placement: .topBarLeading) {
-                    Picker("Show", selection: $pool.showMode) {
-                        ForEach(PoolShowMode.allCases) { mode in
-                            Text(mode.displayName).tag(mode)
-                        }
-                    }
-                    .pickerStyle(.segmented)
-                    .frame(maxWidth: 220)
-                    .accessibilityIdentifier("pool.showMode")
-                    .onChange(of: pool.showMode) { _, _ in
+            VStack(spacing: 0) {
+                PoolControlPanel(
+                    showMode: $pool.showMode,
+                    sortOrder: $pool.sortOrder,
+                    count: { pool.count(for: $0) },
+                    onShowModeChanged: {
                         Swift.Task { await pool.reload() }
                     }
-                }
-                ToolbarItem(placement: .topBarTrailing) {
-                    Menu {
-                        ForEach(PoolSortOrder.allCases) { order in
-                            Button {
-                                pool.sortOrder = order
-                            } label: {
-                                HStack {
-                                    Text(order.displayName)
-                                    if pool.sortOrder == order {
-                                        Image(systemName: "checkmark")
-                                    }
-                                }
+                )
+                .padding(.horizontal, AppSpacing.m)
+                .padding(.top, AppSpacing.s)
+
+                ZStack {
+                    List {
+                        Section {
+                            ForEach(pool.visibleTasks) { task in
+                                poolRow(task)
                             }
                         }
-                    } label: {
-                        Label("Sort", systemImage: "arrow.up.arrow.down")
                     }
-                    .accessibilityIdentifier("pool.sortMenu")
+                    .listStyle(.insetGrouped)
+
+                    if pool.visibleTasks.isEmpty {
+                        PoolEmptyState(showMode: pool.showMode)
+                    }
                 }
             }
+            .navigationTitle("Pool")
             .sheet(item: $editingTask, onDismiss: { presentedTaskID = nil }) { task in
                 TaskEditSheet(
                     task: task,
@@ -149,7 +125,7 @@ struct PoolTabView: View {
                 }
             }
             Spacer()
-            if pool.showMode == .active, task.scheduledDay != nil {
+            if !task.isCompleted, task.scheduledDay != nil {
                 Image(systemName: AppSymbols.Tasks.scheduleToday)
                     .font(.footnote.weight(.semibold))
                     .foregroundStyle(.secondary)
@@ -158,8 +134,8 @@ struct PoolTabView: View {
         .padding(.vertical, AppSpacing.xs)
         .contentShape(Rectangle())
         .onTapGesture { editingTask = task }
-        .swipeActions(edge: .leading, allowsFullSwipe: pool.showMode == .active) {
-            if pool.showMode == .active {
+        .swipeActions(edge: .leading, allowsFullSwipe: !task.isCompleted) {
+            if !task.isCompleted {
                 Button {
                     Swift.Task {
                         await pool.archive(task)
@@ -172,8 +148,8 @@ struct PoolTabView: View {
                 .tint(.green)
             }
         }
-        .swipeActions(edge: .trailing, allowsFullSwipe: pool.showMode == .active) {
-            if pool.showMode == .active {
+        .swipeActions(edge: .trailing, allowsFullSwipe: !task.isCompleted) {
+            if !task.isCompleted {
                 Button {
                     Swift.Task {
                         await pool.archive(task)
@@ -205,7 +181,7 @@ struct PoolTabView: View {
             }
         }
         .contextMenu {
-            if pool.showMode == .active {
+            if !task.isCompleted {
                 Button {
                     Swift.Task {
                         await pool.scheduleForToday(task)
@@ -252,8 +228,170 @@ struct PoolTabView: View {
     }
 }
 
+private struct PoolControlPanel: View {
+    @Binding var showMode: PoolShowMode
+    @Binding var sortOrder: PoolSortOrder
+    let count: (PoolShowMode) -> Int
+    let onShowModeChanged: () -> Void
+
+    var body: some View {
+        VStack(alignment: .leading, spacing: AppSpacing.m) {
+            LazyVGrid(columns: [GridItem(.flexible()), GridItem(.flexible())], spacing: AppSpacing.s) {
+                ForEach(PoolShowMode.allCases) { mode in
+                    PoolCategoryCard(
+                        mode: mode,
+                        count: count(mode),
+                        isSelected: showMode == mode
+                    ) {
+                        showMode = mode
+                        onShowModeChanged()
+                    }
+                }
+            }
+            .accessibilityIdentifier("pool.showMode")
+
+            Menu {
+                ForEach(PoolSortOrder.allCases) { order in
+                    Button {
+                        sortOrder = order
+                    } label: {
+                        Label(
+                            order.displayName,
+                            systemImage: sortOrder == order ? "checkmark" : "circle"
+                        )
+                    }
+                }
+            } label: {
+                HStack(spacing: AppSpacing.s) {
+                    Label("Sort", systemImage: "arrow.up.arrow.down")
+                        .font(.subheadline.weight(.semibold))
+                    Spacer()
+                    Text(sortOrder.displayName)
+                        .font(.subheadline)
+                        .foregroundStyle(.secondary)
+                    Image(systemName: "chevron.up.chevron.down")
+                        .font(.caption2.weight(.semibold))
+                        .foregroundStyle(.secondary)
+                }
+                .padding(.horizontal, AppSpacing.m)
+                .padding(.vertical, AppSpacing.s)
+                .background(.thinMaterial, in: RoundedRectangle(cornerRadius: 14, style: .continuous))
+                .overlay {
+                    RoundedRectangle(cornerRadius: 14, style: .continuous)
+                        .strokeBorder(.secondary.opacity(0.16), lineWidth: 1)
+                }
+            }
+            .buttonStyle(.plain)
+            .accessibilityIdentifier("pool.sortMenu")
+        }
+        .padding(AppSpacing.m)
+        .background(.regularMaterial, in: RoundedRectangle(cornerRadius: 20, style: .continuous))
+        .overlay {
+            RoundedRectangle(cornerRadius: 20, style: .continuous)
+                .strokeBorder(.secondary.opacity(0.12), lineWidth: 1)
+        }
+    }
+}
+
+private struct PoolCategoryCard: View {
+    let mode: PoolShowMode
+    let count: Int
+    let isSelected: Bool
+    let action: () -> Void
+
+    private var symbolName: String {
+        switch mode {
+        case .today: return AppSymbols.Navigation.today
+        case .allTasks: return AppSymbols.Navigation.pool
+        case .archived: return "archivebox"
+        case .completed: return AppSymbols.Tasks.complete
+        }
+    }
+
+    var body: some View {
+        Button(action: action) {
+            VStack(alignment: .leading, spacing: AppSpacing.s) {
+                HStack {
+                    Image(systemName: symbolName)
+                        .font(.title3.weight(.semibold))
+                        .symbolRenderingMode(.hierarchical)
+                    Spacer()
+                    Text("\(count)")
+                        .font(.headline.monospacedDigit())
+                }
+
+                Text(mode.displayName)
+                    .font(.subheadline.weight(.semibold))
+                    .lineLimit(1)
+            }
+            .foregroundStyle(isSelected ? Color.accentColor : Color.primary)
+            .padding(AppSpacing.m)
+            .frame(maxWidth: .infinity, alignment: .leading)
+            .background(
+                isSelected ? Color.accentColor.opacity(0.14) : Color.secondary.opacity(0.08),
+                in: RoundedRectangle(cornerRadius: 18, style: .continuous)
+            )
+            .overlay {
+                RoundedRectangle(cornerRadius: 18, style: .continuous)
+                    .strokeBorder(isSelected ? Color.accentColor.opacity(0.45) : Color.secondary.opacity(0.12), lineWidth: 1)
+            }
+        }
+        .buttonStyle(.plain)
+        .accessibilityLabel("Show \(mode.displayName)")
+        .accessibilityValue("\(count) tasks")
+    }
+}
+
+private struct PoolEmptyState: View {
+    let showMode: PoolShowMode
+
+    private var title: String {
+        switch showMode {
+        case .today: return "Nothing in Today"
+        case .allTasks: return "Pool is empty"
+        case .archived: return "No archived tasks"
+        case .completed: return "No completed tasks"
+        }
+    }
+
+    private var message: String {
+        switch showMode {
+        case .today:
+            return "Tasks scheduled for today will appear here."
+        case .allTasks:
+            return "Add a task when something comes to mind. Active tasks, including Today tasks, will live here."
+        case .archived:
+            return "Archived tasks will appear here. In this version, archive uses the completed task state."
+        case .completed:
+            return "Tasks you finish will appear here."
+        }
+    }
+
+    var body: some View {
+        VStack(spacing: AppSpacing.m) {
+            Image(systemName: AppSymbols.Navigation.pool)
+                .font(.system(size: 72, weight: .light))
+                .foregroundStyle(Color.accentColor)
+                .symbolRenderingMode(.hierarchical)
+
+            VStack(spacing: AppSpacing.xs) {
+                Text(title)
+                    .font(.title3.weight(.semibold))
+
+                Text(message)
+                    .font(.subheadline)
+                    .foregroundStyle(.secondary)
+                    .multilineTextAlignment(.center)
+                    .frame(maxWidth: 300)
+            }
+        }
+        .padding(AppSpacing.xl)
+        .frame(maxWidth: .infinity, maxHeight: .infinity)
+    }
+}
+
 #if DEBUG
-#Preview("Pool — Active") {
+#Preview("Pool — All Tasks") {
     let pool = PreviewMocks.pool()
     PoolTabView(
         pool: pool,

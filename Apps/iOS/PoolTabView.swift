@@ -125,10 +125,19 @@ struct PoolTabView: View {
                 }
             }
             Spacer()
-            if !task.isCompleted, task.scheduledDay != nil {
-                Image(systemName: AppSymbols.Tasks.scheduleToday)
-                    .font(.footnote.weight(.semibold))
-                    .foregroundStyle(.secondary)
+            if !task.isCompleted, task.scheduledDay == nil {
+                Button {
+                    Swift.Task {
+                        await pool.scheduleForToday(task)
+                        await today.reload()
+                    }
+                } label: {
+                    Image(systemName: AppSymbols.Navigation.today)
+                        .font(.footnote.weight(.semibold))
+                        .foregroundStyle(Color.accentColor)
+                }
+                .buttonStyle(.borderless)
+                .accessibilityLabel("Add to Today")
             }
         }
         .padding(.vertical, AppSpacing.xs)

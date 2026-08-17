@@ -77,6 +77,17 @@ Still outstanding:
 
 # Active Work
 
+**2026-08-17 — iOS native tab-bar Add/search branch.** Branch `feature/ios-tabbar-add-task` keeps
+the tab bar navigational by using SwiftUI's native `Tab(role: .search)` Add item on iOS 18+ with the
+outline `plus.rectangle` SF Symbol; on iOS 26+ the tab-bar item activates the system search-field morph via
+`.tabViewSearchActivation(.searchTabSelection)`, and the Add page repeats the symbol with Draw On motion
+when it opens. iOS 17 keeps the separated circular Add-button fallback using the same static symbol. The
+shared add/search flow replaced the pinned Today/Pool fields: From Today, submit/suggestion schedules for
+Today; from Pool or other tabs, submit adds to Pool and suggestions open the Pool task detail. Verified on
+iOS 26.5 simulator with focused UI tests for Today quick-add and Pool multiple quick-add.
+Follow-up in the same branch removed task-detail auto-focus so opening details does not raise the
+keyboard, and removed the app-wide per-second active timer strip from non-Timer tabs.
+
 **2026-08-17 — iOS Spotlight-style quick entry branch.** Branch
 `feature/ios-spotlight-quick-entry` moves the shared Today/Pool add/search field out of the list and
 into a bottom safe-area control. It rises above the keyboard via SwiftUI keyboard avoidance and shows

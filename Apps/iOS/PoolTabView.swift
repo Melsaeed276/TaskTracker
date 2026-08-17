@@ -125,7 +125,7 @@ struct PoolTabView: View {
                 }
             }
             Spacer()
-            if !task.isCompleted, task.scheduledDay == nil {
+            if pool.needsTodayAction(for: task) {
                 Button {
                     Swift.Task {
                         await pool.scheduleForToday(task)
@@ -197,7 +197,7 @@ struct PoolTabView: View {
                         await today.reload()
                     }
                 } label: {
-                    Label("Schedule for Today", systemImage: AppSymbols.Tasks.scheduleToday)
+                    Label("Schedule for Today", systemImage: AppSymbols.Navigation.today)
                 }
 
                 Button {
@@ -312,6 +312,7 @@ private struct PoolCategoryCard: View {
         switch mode {
         case .today: return AppSymbols.Navigation.today
         case .allTasks: return AppSymbols.Navigation.pool
+        case .scheduled: return "calendar"
         case .archived: return "archivebox"
         case .completed: return AppSymbols.Tasks.complete
         }
@@ -358,6 +359,7 @@ private struct PoolEmptyState: View {
         switch showMode {
         case .today: return "Nothing in Today"
         case .allTasks: return "Pool is empty"
+        case .scheduled: return "No scheduled tasks"
         case .archived: return "No archived tasks"
         case .completed: return "No completed tasks"
         }
@@ -369,6 +371,8 @@ private struct PoolEmptyState: View {
             return "Tasks scheduled for today will appear here."
         case .allTasks:
             return "Add a task when something comes to mind. Active tasks, including Today tasks, will live here."
+        case .scheduled:
+            return "Tasks with a scheduled day will appear here."
         case .archived:
             return "Archived tasks will appear here. In this version, archive uses the completed task state."
         case .completed:

@@ -4,6 +4,7 @@ import TaskDomain
 public enum PoolShowMode: String, Sendable, CaseIterable, Identifiable {
     case today
     case allTasks
+    case scheduled
     case archived
     case completed
 
@@ -13,6 +14,7 @@ public enum PoolShowMode: String, Sendable, CaseIterable, Identifiable {
         switch self {
         case .today: return "Today"
         case .allTasks: return "All Tasks"
+        case .scheduled: return "Scheduled"
         case .archived: return "Archived"
         case .completed: return "Completed"
         }
@@ -49,9 +51,11 @@ public final class PoolController {
         let modeFiltered = tasks.filter { task in
             switch showMode {
             case .today:
-                return !task.isCompleted && task.scheduledDay == DayKey.from(date: timeSource.now, calendar: calendar)
+                return !task.isCompleted && task.scheduledDay == todayKey
             case .allTasks:
                 return !task.isCompleted
+            case .scheduled:
+                return !task.isCompleted && task.scheduledDay != nil
             case .archived, .completed:
                 return task.isCompleted
             }
@@ -67,13 +71,19 @@ public final class PoolController {
         tasks.filter { task in
             switch mode {
             case .today:
-                return !task.isCompleted && task.scheduledDay == DayKey.from(date: timeSource.now, calendar: calendar)
+                return !task.isCompleted && task.scheduledDay == todayKey
             case .allTasks:
                 return !task.isCompleted
+            case .scheduled:
+                return !task.isCompleted && task.scheduledDay != nil
             case .archived, .completed:
                 return task.isCompleted
             }
         }.count
+    }
+
+    public func needsTodayAction(for task: Task) -> Bool {
+        !task.isCompleted && task.scheduledDay != todayKey
     }
 
     private let repository: any TaskRepository
@@ -86,6 +96,10 @@ public final class PoolController {
         if query.isEmpty { filtered = source }
         else { filtered = source.filter { $0.title.localizedCaseInsensitiveContains(query) } }
         return Self.sorted(filtered, by: sortOrder)
+    }
+
+    private var todayKey: DayKey {
+        DayKey.from(date: timeSource.now, calendar: calendar)
     }
 
     public init(

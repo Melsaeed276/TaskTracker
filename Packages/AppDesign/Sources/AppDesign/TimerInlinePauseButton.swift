@@ -28,3 +28,12 @@ public struct TimerInlinePauseButton: View {
         .accessibilityIdentifier("timer.inlinePause")
     }
 }
+#if DEBUG
+#Preview("Inline Pause - Running") {
+    TimerInlinePauseButton(isPaused: false, action: {})
+}
+
+#Preview("Inline Pause - Paused") {
+    TimerInlinePauseButton(isPaused: true, action: {})
+}
+#endif

@@ -4,7 +4,6 @@ public enum TimerUI {
     /// Shared anchor keeps TimelineView ticks aligned and stable across re-renders.
     public static let timelineAnchor = Date(timeIntervalSinceReferenceDate: 0)
 }
-
 public struct TimerControlButton: View {
     public enum Tone {
         case positive
@@ -86,7 +85,7 @@ public struct TaskCompletionMark: View {
     }
 }
 
-/// Compact active-timer strip for app chrome — plain values only (no domain types).
+/// Compact active-timer strip for app chrome - plain values only (no domain types).
 public struct TaskTimerActionBar: View {
     public let countdown: String
     public let statusText: String
@@ -248,3 +247,47 @@ public struct TaskTimerActionBar: View {
         .accessibilityIdentifier(accessibilityIdentifier)
     }
 }
+
+#if DEBUG
+#Preview("Timer Control - Positive") {
+    TimerControlButton(title: "Start", systemImage: AppSymbols.Timer.resume, tone: .positive, action: {})
+}
+
+#Preview("Timer Control - Caution") {
+    TimerControlButton(title: "Stop", systemImage: AppSymbols.Timer.stop, tone: .caution, action: {})
+}
+
+#Preview("Completion Mark - Incomplete") {
+    TaskCompletionMark(isCompleted: false)
+}
+
+#Preview("Completion Mark - Complete") {
+    TaskCompletionMark(isCompleted: true, tint: .accentColor)
+}
+
+#Preview("Timer Action Bar - Running") {
+    TaskTimerActionBar(
+        countdown: "24:13",
+        statusText: "Running",
+        isPaused: false,
+        onPauseResume: {},
+        onStop: {},
+        onOpenTimer: {},
+        relatedTaskTitle: "Write project plan",
+        onOpenRelatedTask: {}
+    )
+}
+
+#Preview("Timer Action Bar - Paused Linked") {
+    TaskTimerActionBar(
+        countdown: "12:04",
+        statusText: "Paused",
+        isPaused: true,
+        onPauseResume: {},
+        onStop: {},
+        onOpenTimer: nil,
+        relatedTaskTitle: "Write project plan",
+        onOpenRelatedTask: {}
+    )
+}
+#endif

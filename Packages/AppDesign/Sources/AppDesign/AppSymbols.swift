@@ -17,8 +17,8 @@ public enum AppSymbols {
     }
 
     public enum Navigation {
-        public static let today = "sun.max"
-        public static let pool = "tray.full"
+        public static let today = "calendar.badge.plus"
+        public static let pool = "rectangle.stack.badge.plus"
         public static let timer = "timer"
         public static let settings = "gearshape"
         public static let taskHub = "checklist"

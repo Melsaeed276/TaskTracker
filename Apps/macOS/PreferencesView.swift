@@ -24,3 +24,8 @@ struct PreferencesView: View {
         return "\(version) (\(build))"
     }
 }
+#if DEBUG
+#Preview("Preferences") {
+    PreferencesView()
+}
+#endif

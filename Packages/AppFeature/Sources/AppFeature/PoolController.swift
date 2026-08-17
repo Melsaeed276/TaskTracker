@@ -81,6 +81,12 @@ public final class PoolController {
 
     public func quickAdd(title: String) async {
         do {
+            if try await existingActiveTask(titled: title) != nil {
+                showMode = .active
+                await reload()
+                return
+            }
+
             let created = try TaskService.create(title: title, now: timeSource.now)
             try await repository.upsert(created)
             showMode = .active
@@ -99,6 +105,14 @@ public final class PoolController {
     public func delete(_ task: Task) async {
         do {
             try await repository.deleteTask(id: task.id)
+            await reload()
+        } catch { return }
+    }
+
+    public func archive(_ task: Task) async {
+        do {
+            let archived = try TaskService.complete(task, now: timeSource.now)
+            try await repository.upsert(archived)
             await reload()
         } catch { return }
     }
@@ -150,5 +164,17 @@ public final class PoolController {
                 return $0.title.localizedCaseInsensitiveCompare($1.title) == .orderedAscending
             }
         }
+    }
+
+    private func existingActiveTask(titled title: String) async throws -> Task? {
+        let target = Self.normalizedTitle(title)
+        guard !target.isEmpty else { return nil }
+        return try await repository.allTasks().first {
+            $0.completedAt == nil && Self.normalizedTitle($0.title) == target
+        }
+    }
+
+    private static func normalizedTitle(_ title: String) -> String {
+        title.trimmingCharacters(in: .whitespacesAndNewlines).localizedLowercase
     }
 }

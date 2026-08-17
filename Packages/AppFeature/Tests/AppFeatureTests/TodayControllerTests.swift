@@ -45,6 +45,37 @@ struct TodayControllerTests {
         #expect(controller.tasks[0].completedAt == nil)
     }
 
+    @Test("quick-add schedules an existing active task instead of duplicating it")
+    @MainActor
+    func quickAddSchedulesExistingActiveTask() async throws {
+        let (controller, repo) = try makeController()
+        let now = Date(timeIntervalSince1970: 1_700_000_000)
+        let existing = try TaskService.create(title: "Call bank", now: now)
+        try await repo.upsert(existing)
+
+        await controller.quickAdd(title: "  call BANK  ")
+
+        #expect(controller.tasks.count == 1)
+        #expect(controller.tasks[0].id == existing.id)
+        #expect(controller.tasks[0].scheduledDay == DayKey(rawValue: "2023-11-14"))
+        #expect(try await repo.allTasks().count == 1)
+    }
+
+    @Test("removeFromToday clears schedule without completing")
+    @MainActor
+    func removeFromTodayClearsSchedule() async throws {
+        let (controller, repo) = try makeController()
+        await controller.quickAdd(title: "Move back")
+        let task = try #require(controller.tasks.first)
+
+        await controller.removeFromToday(task)
+
+        #expect(controller.tasks.isEmpty)
+        let stored = try #require(try await repo.task(id: task.id))
+        #expect(stored.scheduledDay == nil)
+        #expect(stored.completedAt == nil)
+    }
+
     @Test("complete removes the task from Today; uncomplete restores it")
     @MainActor
     func completeRemovesFromToday() async throws {

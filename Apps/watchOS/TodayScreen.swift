@@ -46,7 +46,6 @@ struct TodayScreen: View {
         }
     }
 }
-
 private struct TodayRow: View {
     let task: Task
     let onTap: () -> Void
@@ -77,3 +76,17 @@ private struct TodayRow: View {
         .accessibilityHint("Tap to complete, long press to start timer")
     }
 }
+
+#if DEBUG
+#Preview("Today — Populated") {
+    let today = PreviewMocks.today()
+    TodayScreen(today: today, timer: PreviewMocks.idleTimer())
+        .task { await today.reload() }
+}
+
+#Preview("Today — Empty") {
+    let today = PreviewMocks.today([])
+    TodayScreen(today: today, timer: PreviewMocks.idleTimer())
+        .task { await today.reload() }
+}
+#endif

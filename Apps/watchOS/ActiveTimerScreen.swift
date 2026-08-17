@@ -100,3 +100,20 @@ struct ActiveTimerScreen: View {
         await timer.reload()
     }
 }
+#if DEBUG
+#Preview("Active Timer — Running") {
+    let timer = PreviewMocks.runningTimer()
+    ActiveTimerScreen(timer: timer)
+        .task { await timer.reload() }
+}
+
+#Preview("Active Timer — Paused") {
+    let timer = PreviewMocks.pausedTimer()
+    ActiveTimerScreen(timer: timer)
+        .task { await timer.reload() }
+}
+
+#Preview("Active Timer — Idle") {
+    ActiveTimerScreen(timer: PreviewMocks.idleTimer())
+}
+#endif

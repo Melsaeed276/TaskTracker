@@ -58,3 +58,14 @@ public struct TimerDisplayModePager<TimerPage: View, StopwatchPage: View>: View 
         .accessibilityIdentifier(identifier)
     }
 }
+
+#if DEBUG
+#Preview("Display Mode Pager") {
+    TimerDisplayModePager {
+        Text("Timer page").font(.largeTitle)
+    } stopwatchPage: {
+        Text("Stopwatch page").font(.largeTitle)
+    }
+    .frame(height: 200)
+}
+#endif

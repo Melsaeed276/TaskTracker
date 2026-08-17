@@ -31,7 +31,8 @@ struct RootTabView: View {
                 presentedTaskID: $presentedTaskID,
                 makeTimeLog: makeTimeLog,
                 onStartedTimer: { selectedTab = .timer },
-                onOpenTimerTab: { selectedTab = .timer }
+                onOpenTimerTab: { selectedTab = .timer },
+                onOpenPoolTab: { selectedTab = .pool }
             )
             .modifier(ActiveTimerBarInset(isVisible: showsActiveTimerBar, bar: { activeTimerBar }))
             .tabItem {
@@ -61,6 +62,7 @@ struct RootTabView: View {
                 pool: pool,
                 onOpenRelatedTask: openRelatedTask
             )
+            .modifier(ActiveTimerBarInset(isVisible: showsActiveTimerBar, bar: { activeTimerBar }))
             .tabItem {
                 Label("Timer", systemImage: AppSymbols.Navigation.timer)
             }
@@ -93,8 +95,7 @@ struct RootTabView: View {
     /// sheet is open the sheet hosts the same strip (without Open Task), so this one stays off.
     private var showsActiveTimerBar: Bool {
         guard timer.isActive else { return false }
-        if selectedTab == .timer { return false }
-        if let related = timer.relatedTaskID, presentedTaskID == related { return false }
+        if presentedTaskID != nil { return false }
         return true
     }
 
@@ -177,3 +178,16 @@ private struct ActiveTimerBarInset<Bar: View>: ViewModifier {
             }
     }
 }
+
+#if DEBUG
+#Preview("Root — Running Timer Bar") {
+    let timer = PreviewMocks.runningTimer()
+    RootTabView(
+        timer: timer,
+        today: PreviewMocks.today(),
+        pool: PreviewMocks.pool(),
+        makeTimeLog: { PreviewMocks.timeLog(for: $0) }
+    )
+    .task { await timer.reload() }
+}
+#endif

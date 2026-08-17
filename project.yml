@@ -45,6 +45,7 @@ targets:
     dependencies:
       - package: AppFeature
       - package: AppDesign
+      - package: AppData
     settings:
       base:
         PRODUCT_BUNDLE_IDENTIFIER: com.diwan.TaskTracker-mac
@@ -72,6 +73,7 @@ targets:
     dependencies:
       - package: AppFeature
       - package: AppDesign
+      - package: AppData
       - target: TaskTracker-watchOS
         embed: true
       - target: TaskTracker-iOS-Widget
@@ -82,6 +84,8 @@ targets:
         PRODUCT_NAME: TaskTracker
         INFOPLIST_KEY_UILaunchScreen_Generation: YES
         INFOPLIST_KEY_NSSupportsLiveActivities: YES
+        INFOPLIST_KEY_UISupportedInterfaceOrientations: "UIInterfaceOrientationPortrait UIInterfaceOrientationLandscapeLeft UIInterfaceOrientationLandscapeRight"
+        INFOPLIST_KEY_UISupportedInterfaceOrientations_iPad: "UIInterfaceOrientationPortrait UIInterfaceOrientationPortraitUpsideDown UIInterfaceOrientationLandscapeLeft UIInterfaceOrientationLandscapeRight"
         # Required for SwiftData↔CloudKit silent-push import.
         INFOPLIST_KEY_UIBackgroundModes: remote-notification
         TARGETED_DEVICE_FAMILY: "1,2"
@@ -132,6 +136,7 @@ targets:
     dependencies:
       - package: AppFeature
       - package: AppDesign
+      - package: AppData
     settings:
       base:
         PRODUCT_BUNDLE_IDENTIFIER: com.diwan.TaskTracker.app.watch

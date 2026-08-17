@@ -77,6 +77,11 @@ Still outstanding:
 
 # Active Work
 
+**2026-08-17 — iOS Spotlight-style quick entry branch.** Branch
+`feature/ios-spotlight-quick-entry` moves the shared Today/Pool add/search field out of the list and
+into a bottom safe-area control. It rises above the keyboard via SwiftUI keyboard avoidance and shows
+matching existing-task suggestions above the field. Verified with `TaskTracker-iOS` Debug build.
+
 **2026-08-16 — Timer dual display modes + cross-platform UI tests.** Timer tab now has two swipeable
 pages (page dots, like Apple Clock) over the same `ActiveTimerController`: a list-row countdown
 (`TimerCountdownRow`, large thin remaining + preset label + inline circular Pause/Resume) and an
@@ -601,3 +606,35 @@ task-hub window). Milestone 4 started.
 folder refs were confusing SourceKit. `postGenCommand` now strips them
 (`scripts/strip-local-package-folder-refs.py`). Layout was already correct; CLI tests were fine.
 2026-08-09 — Plan approved. Milestone 0 started: packages, boundary probe, root docs.
+
+2026-08-16 — Added SwiftUI `#Preview` coverage for every view across iOS, macOS, watchOS.
+Each app target has `PreviewSupport.swift` (in-memory `TaskRepository`/`TimerEventRepository`/
+`TaskTimeLogRepository` doubles + `PreviewTimeSource` conforming to both TaskDomain and TimerDomain
+`TimeSource`, plus a `@MainActor PreviewMocks` factory with sample tasks and idle/running/paused
+timer and time-log builders) — all wrapped in `#if DEBUG`. The three shared `ViewPreviews.swift`
+files were removed; every top-level app screen now carries its own inline `#Preview` next to it
+(TimerTabView, TodayTabView, PoolTabView, TaskEditSheet, SettingsTabView, RootTabView on iOS;
+TaskHubView, TimerSectionView, PreferencesView on macOS; WatchRootView, ActiveTimerScreen,
+TodayScreen on watchOS) covering populated/empty/linked/search/completed/excluded cases. The
+`AppDesign` package components (StopwatchAnalogFace, TimerControlButton, TaskCompletionMark,
+TaskTimerActionBar, TimerDisplay, TimerCountdownRow, TimerInlinePauseButton, SurfaceGroup,
+TimerDisplayModePager, AppTabView) got self-contained previews using literal values — they must NOT
+reference app-target `PreviewMocks` (AppDesign can't import the app, and that was the source of the
+"Cannot find 'PreviewMocks' in scope" error). `AppData` is an explicit dependency of the three
+app targets in `project.yml`. Verified: `xcodegen generate` + Debug builds succeed for iOS, macOS,
+watchOS. NOTE: macOS `TimerSectionView.init` takes only `(timer: + sizing params)`, `TaskHubView.init`
+only `(today:pool:timer:)`, and `PreviewMocks.pausedTimer` uses `(duration:accumulated:)` (no
+`remaining:`) — these differ from the iOS signatures.
+
+2026-08-17 — Redesigned the iPhone Timer tab (`Apps/iOS/TimerTabView.swift`) from the old list-row +
+page-swipe display into a mobile-first timer face: segmented Timer/Stopwatch mode switch, large
+centered digital timer, digital-first stopwatch view, idle-only duration presets, linked-task affordance,
+and bottom safe-area controls for Start/Pause/Resume/Stop/Reset. Timer arithmetic remains in
+`ActiveTimerController`; the view only renders formatted labels from AppFeature. Verified: iOS, macOS,
+watchOS Debug builds succeed; `Packages/AppDesign` tests pass.
+2026-08-17 — Timer tab UX iteration: idle timer face now opens a task picker, users can select Today,
+Pool, or No Task before starting, and `Start` links the session via `ActiveTimerController.start(duration:
+relatedTaskID:)`. Active linked sessions show the task inside the timer face; paused active sessions use
+the existing Resume flow for the remaining time. Bottom controls remain in a safe-area panel near the tab
+bar. Verified: iOS Debug build succeeds after the change; macOS/watchOS builds and AppFeature/AppDesign
+package tests passed before this cleanup in the same iteration.

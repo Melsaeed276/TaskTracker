@@ -24,3 +24,10 @@ struct WatchRootView: View {
         await today.reload()
     }
 }
+#if DEBUG
+#Preview("Watch Root") {
+    let timer = PreviewMocks.runningTimer()
+    WatchRootView(timer: timer, today: PreviewMocks.today())
+        .task { await timer.reload() }
+}
+#endif

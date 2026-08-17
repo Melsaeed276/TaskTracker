@@ -201,7 +201,6 @@ struct TimerSectionView: View {
         .disabled(!timer.isActive)
     }
 }
-
 private struct OptionalKeyboardShortcut: ViewModifier {
     let key: KeyEquivalent
     let modifiers: EventModifiers
@@ -216,3 +215,30 @@ private struct OptionalKeyboardShortcut: ViewModifier {
         }
     }
 }
+
+#if DEBUG
+#Preview("Timer — Idle") {
+    TimerSectionView(
+        timer: PreviewMocks.idleTimer(),
+        showsStopwatch: false
+    )
+}
+
+#Preview("Timer — Running") {
+    let timer = PreviewMocks.runningTimer(remaining: 1499, duration: 1800)
+    TimerSectionView(
+        timer: timer,
+        showsStopwatch: false
+    )
+    .task { await timer.reload() }
+}
+
+#Preview("Timer — Paused") {
+    let timer = PreviewMocks.pausedTimer(duration: 1800, accumulated: 301)
+    TimerSectionView(
+        timer: timer,
+        showsStopwatch: false
+    )
+    .task { await timer.reload() }
+}
+#endif

@@ -31,9 +31,32 @@ public final class TodayController {
 
     public func quickAdd(title: String) async {
         do {
+            if let existing = try await existingActiveTask(titled: title) {
+                let scheduled = TaskService.scheduleForToday(existing, now: timeSource.now, calendar: calendar)
+                try await repository.upsert(scheduled)
+                await reload()
+                return
+            }
+
             let created = try TaskService.create(title: title, now: timeSource.now)
             let scheduled = TaskService.scheduleForToday(created, now: timeSource.now, calendar: calendar)
             try await repository.upsert(scheduled)
+            await reload()
+        } catch { return }
+    }
+
+    public func scheduleForToday(_ task: Task) async {
+        do {
+            let scheduled = TaskService.scheduleForToday(task, now: timeSource.now, calendar: calendar)
+            try await repository.upsert(scheduled)
+            await reload()
+        } catch { return }
+    }
+
+    public func removeFromToday(_ task: Task) async {
+        do {
+            let unscheduled = TaskService.unschedule(task, now: timeSource.now)
+            try await repository.upsert(unscheduled)
             await reload()
         } catch { return }
     }
@@ -82,5 +105,17 @@ public final class TodayController {
             try await repository.upsert(updated)
             await reload()
         } catch { return }
+    }
+
+    private func existingActiveTask(titled title: String) async throws -> Task? {
+        let target = Self.normalizedTitle(title)
+        guard !target.isEmpty else { return nil }
+        return try await repository.allTasks().first {
+            $0.completedAt == nil && Self.normalizedTitle($0.title) == target
+        }
+    }
+
+    private static func normalizedTitle(_ title: String) -> String {
+        title.trimmingCharacters(in: .whitespacesAndNewlines).localizedLowercase
     }
 }

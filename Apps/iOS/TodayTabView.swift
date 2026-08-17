@@ -13,6 +13,7 @@ struct TodayTabView: View {
     var makeTimeLog: ((UUID) -> TaskTimeLogController)?
     var onStartedTimer: (() -> Void)? = nil
     var onOpenTimerTab: (() -> Void)? = nil
+    var onOpenPoolTab: (() -> Void)? = nil
     @State private var draft = ""
     @State private var editingTask: Task?
 
@@ -20,26 +21,40 @@ struct TodayTabView: View {
         NavigationStack {
             List {
                 Section {
-                    HStack(spacing: AppSpacing.s) {
-                        Image(systemName: AppSymbols.Tasks.add)
-                            .foregroundStyle(Color.accentColor)
-                            .font(.headline)
-                        TextField("New task", text: $draft)
-                            .submitLabel(.done)
-                            .accessibilityIdentifier("today.newTaskField")
-                            .onSubmit {
-                                let title = draft
-                                draft = ""
-                                Swift.Task { await today.quickAdd(title: title) }
-                            }
-                    }
-                    .padding(.vertical, AppSpacing.xs)
-                }
-
-                Section {
                     ForEach(today.tasks) { task in
-                        TodayTaskRow(task: task, today: today, onEdit: { editingTask = task })
+                        TodayTaskRow(
+                            task: task,
+                            today: today,
+                            onComplete: { await pool.reload() },
+                            onEdit: { editingTask = task }
+                        )
                     }
+                }
+            }
+            .safeAreaInset(edge: .bottom, spacing: 0) {
+                TaskQuickEntryView(
+                    placeholder: "Add or search task",
+                    draft: $draft,
+                    suggestions: matchingActiveTasks,
+                    onSubmit: { title in
+                        Swift.Task {
+                            await today.quickAdd(title: title)
+                            await pool.reload()
+                        }
+                    },
+                    onSelectSuggestion: { task in
+                        draft = ""
+                        Swift.Task {
+                            await today.scheduleForToday(task)
+                            await pool.reload()
+                        }
+                    }
+                )
+                .accessibilityIdentifier("today.newTaskField")
+            }
+            .overlay {
+                if today.tasks.isEmpty && draft.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty {
+                    TodayEmptyState(onOpenPoolTab: onOpenPoolTab)
                 }
             }
             .listStyle(.insetGrouped)
@@ -89,52 +104,140 @@ struct TodayTabView: View {
         presentedTaskID = id
         taskIDToPresent = nil
     }
+
+    private var matchingActiveTasks: [Task] {
+        let query = normalized(draft)
+        guard !query.isEmpty else { return [] }
+        return pool.tasks.filter {
+            !$0.isCompleted && normalized($0.title).contains(query)
+        }
+    }
+
+    private func normalized(_ title: String) -> String {
+        title.trimmingCharacters(in: .whitespacesAndNewlines).localizedLowercase
+    }
+}
+
+private struct TodayEmptyState: View {
+    let onOpenPoolTab: (() -> Void)?
+
+    var body: some View {
+        VStack(spacing: AppSpacing.m) {
+            Image(systemName: AppSymbols.Navigation.today)
+                .font(.system(size: 72, weight: .light))
+                .foregroundStyle(Color.accentColor)
+                .symbolRenderingMode(.hierarchical)
+
+            VStack(spacing: AppSpacing.xs) {
+                Text("Nothing planned today")
+                    .font(.title3.weight(.semibold))
+
+                Text("Pick tasks from the Pool when you are ready to plan your day.")
+                    .font(.subheadline)
+                    .foregroundStyle(.secondary)
+                    .multilineTextAlignment(.center)
+                    .frame(maxWidth: 280)
+            }
+
+            Button {
+                onOpenPoolTab?()
+            } label: {
+                Label("Open Pool", systemImage: AppSymbols.Navigation.pool)
+                    .frame(minWidth: 160)
+            }
+            .buttonStyle(.borderedProminent)
+            .controlSize(.large)
+            .accessibilityIdentifier("today.empty.openPool")
+        }
+        .padding(AppSpacing.xl)
+        .frame(maxWidth: .infinity, maxHeight: .infinity)
+    }
 }
 
 private struct TodayTaskRow: View {
     let task: Task
     let today: TodayController
+    let onComplete: () async -> Void
     let onEdit: () -> Void
 
     var body: some View {
         HStack(alignment: .top, spacing: AppSpacing.s) {
-            // A `Button` sharing a row with an outer `.onTapGesture` is a well-known SwiftUI
-            // conflict — hit-testing between the two becomes unreliable, so the edit gesture is
-            // scoped to the title text only, leaving the completion button's tap area untouched.
             Button {
                 Swift.Task {
-                    if task.isCompleted {
-                        await today.uncomplete(task)
-                    } else {
-                        await today.complete(task)
-                    }
+                    await today.complete(task)
+                    await onComplete()
                 }
             } label: {
                 TaskCompletionMark(isCompleted: task.isCompleted, tint: .accentColor)
             }
-            .buttonStyle(.plain)
-            .accessibilityLabel(task.isCompleted ? "Mark incomplete" : "Mark complete")
+            .buttonStyle(.borderless)
+            .accessibilityLabel(task.isCompleted ? "Completed" : "Mark done")
 
             VStack(alignment: .leading, spacing: AppSpacing.xs) {
                 Text(task.title)
                     .font(.body)
                     .strikethrough(task.isCompleted)
                     .foregroundStyle(task.isCompleted ? .secondary : .primary)
-                    .contentShape(Rectangle())
-                    .onTapGesture(perform: onEdit)
 
                 if let notes = task.notes, !notes.isEmpty {
                     Text(notes)
                         .font(.subheadline)
                         .foregroundStyle(.secondary)
                         .lineLimit(2)
-                        .contentShape(Rectangle())
-                        .onTapGesture(perform: onEdit)
                 }
             }
 
             Spacer()
         }
         .padding(.vertical, AppSpacing.xs)
+        .contentShape(Rectangle())
+        .onTapGesture(perform: onEdit)
+        .swipeActions(edge: .leading, allowsFullSwipe: true) {
+            Button {
+                Swift.Task {
+                    await today.complete(task)
+                    await onComplete()
+                }
+            } label: {
+                Image(systemName: AppSymbols.Tasks.complete)
+            }
+            .accessibilityLabel("Done")
+            .tint(.green)
+        }
+        .swipeActions(edge: .trailing, allowsFullSwipe: true) {
+            Button {
+                Swift.Task { await today.removeFromToday(task) }
+            } label: {
+                Label("Remove Today", systemImage: "calendar.badge.minus")
+                    .labelStyle(.titleAndIcon)
+            }
+            .tint(.orange)
+        }
     }
 }
+
+#if DEBUG
+#Preview("Today — Populated") {
+    let today = PreviewMocks.today()
+    TodayTabView(
+        today: today,
+        pool: PreviewMocks.pool(),
+        timer: PreviewMocks.idleTimer(),
+        taskIDToPresent: .constant(nil),
+        presentedTaskID: .constant(nil)
+    )
+    .task { await today.reload() }
+}
+
+#Preview("Today — Empty") {
+    let today = PreviewMocks.today([])
+    TodayTabView(
+        today: today,
+        pool: PreviewMocks.pool(),
+        timer: PreviewMocks.idleTimer(),
+        taskIDToPresent: .constant(nil),
+        presentedTaskID: .constant(nil)
+    )
+    .task { await today.reload() }
+}
+#endif

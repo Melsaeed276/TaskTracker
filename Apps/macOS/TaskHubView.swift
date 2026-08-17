@@ -77,7 +77,6 @@ struct TaskHubView: View {
         }
     }
 }
-
 private struct TodayPane: View {
     @Bindable var today: TodayController
     let pool: PoolController
@@ -417,3 +416,13 @@ private struct TimerPane: View {
         }
     }
 }
+
+#if DEBUG
+#Preview("Task Hub") {
+    TaskHubView(
+        today: PreviewMocks.today(),
+        pool: PreviewMocks.pool(),
+        timer: PreviewMocks.idleTimer()
+    )
+}
+#endif

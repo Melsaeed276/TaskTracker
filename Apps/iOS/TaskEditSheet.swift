@@ -12,7 +12,6 @@ struct TaskEditDraft: Equatable {
     var priority: TaskPriority
     var timerPresetMinutes: Int
 }
-
 struct TaskEditSheet: View {
     let task: Task
     var timer: ActiveTimerController?
@@ -395,3 +394,36 @@ struct TaskEditSheet: View {
         }
     }
 }
+
+#if DEBUG
+#Preview("Edit Task — Scheduled") {
+    let task = PreviewMocks.makeTask("Write project plan", notes: "Cover goals and milestones", priority: .high)
+    TaskEditSheet(task: task, onSave: { _ in }, onDelete: {})
+}
+
+#Preview("Edit Task — Linked Timer") {
+    let task = PreviewMocks.makeTask("Write project plan")
+    let timer = PreviewMocks.runningTimer(relatedTaskID: task.id)
+    TaskEditSheet(
+        task: task,
+        timer: timer,
+        onSave: { _ in },
+        onDelete: {},
+        onStartedTimer: {},
+        onOpenTimerTab: {}
+    )
+    .task { await timer.reload() }
+}
+
+#Preview("Edit Task — With Time Log") {
+    let task = PreviewMocks.makeTask("Write project plan")
+    let timeLog = PreviewMocks.timeLog(for: task.id)
+    TaskEditSheet(task: task, makeTimeLog: { _ in timeLog }, onSave: { _ in }, onDelete: {})
+}
+
+#Preview("Edit Task — Excluded Session") {
+    let task = PreviewMocks.makeTask("Write project plan")
+    let timeLog = PreviewMocks.timeLog(for: task.id, excluded: true)
+    TaskEditSheet(task: task, makeTimeLog: { _ in timeLog }, onSave: { _ in }, onDelete: {})
+}
+#endif

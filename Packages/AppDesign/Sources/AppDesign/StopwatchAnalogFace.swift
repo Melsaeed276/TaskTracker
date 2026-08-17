@@ -158,3 +158,24 @@ public struct StopwatchAnalogFace: View {
         #endif
     }
 }
+#if DEBUG
+#Preview("Stopwatch - Running") {
+    StopwatchAnalogFace(
+        elapsedText: "12:34",
+        endTimeText: "Ends 14:20",
+        secondsAngle: 234,
+        minutesAngle: 37,
+        maxDiameter: 280
+    )
+}
+
+#Preview("Stopwatch - No End Time") {
+    StopwatchAnalogFace(
+        elapsedText: "00:42",
+        endTimeText: nil,
+        secondsAngle: 42,
+        minutesAngle: 7,
+        maxDiameter: 280
+    )
+}
+#endif

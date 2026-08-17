@@ -63,3 +63,24 @@ public struct TimerCountdownRow: View {
         }
     }
 }
+#if DEBUG
+#Preview("Countdown Row - Active") {
+    TimerCountdownRow(
+        remainingText: "24:13",
+        durationText: "25 min",
+        isActive: true,
+        isPaused: false,
+        onPauseResume: {}
+    )
+}
+
+#Preview("Countdown Row - Inactive") {
+    TimerCountdownRow(
+        remainingText: "25:00",
+        durationText: "25 min",
+        isActive: false,
+        isPaused: false,
+        onPauseResume: {}
+    )
+}
+#endif

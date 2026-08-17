@@ -20,7 +20,7 @@ extension SwiftDataTaskRepository: TaskRepository {
 
     public func poolTasks() async throws -> [Task] {
         let fetch = FetchDescriptor<TaskRecord>(
-            predicate: #Predicate { $0.scheduledDay == nil && $0.completedAt == nil }
+            predicate: #Predicate { $0.completedAt == nil }
         )
         return try modelContext.fetch(fetch).map(TaskMapping.toDomain)
     }
@@ -63,4 +63,3 @@ extension SwiftDataTaskRepository: TaskRepository {
         try modelContext.save()
     }
 }
-

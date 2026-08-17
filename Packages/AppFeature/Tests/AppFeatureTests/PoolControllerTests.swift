@@ -79,7 +79,7 @@ struct PoolControllerTests {
         #expect(controller.visibleTasks[0].title == "Coffee ☕️")
     }
 
-    @Test("scheduleForToday removes the task from the pool")
+    @Test("scheduleForToday keeps the active task in the pool")
     @MainActor
     func scheduleForTodayLeavesPool() async throws {
         let (controller, _, _) = try makeController()
@@ -87,6 +87,29 @@ struct PoolControllerTests {
         let task = try #require(controller.tasks.first)
 
         await controller.scheduleForToday(task)
+        #expect(controller.tasks.count == 1)
+        #expect(controller.tasks[0].scheduledDay == DayKey(rawValue: "2023-11-14"))
+    }
+
+    @Test("quick-add does not duplicate an active task title")
+    @MainActor
+    func quickAddDoesNotDuplicateActiveTitle() async throws {
+        let (controller, _, _) = try makeController()
+        await controller.quickAdd(title: "  Renew license  ")
+        await controller.quickAdd(title: "renew LICENSE")
+
+        #expect(controller.tasks.count == 1)
+        #expect(controller.tasks[0].title == "Renew license")
+    }
+
+    @Test("archive removes the task from active pool")
+    @MainActor
+    func archiveRemovesTaskFromActivePool() async throws {
+        let (controller, _, _) = try makeController()
+        await controller.quickAdd(title: "Archive me")
+        let task = try #require(controller.tasks.first)
+
+        await controller.archive(task)
         #expect(controller.tasks.isEmpty)
     }
 

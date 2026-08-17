@@ -14,7 +14,7 @@ public extension View {
     }
 
     /// Floating panel host (menu-bar window). Shaped Regular glass on 26+; shaped material on the
-    /// floor. Deliberately does **not** clear the window container background — that made
+    /// floor. Deliberately does **not** clear the window container background - that made
     /// MenuBarExtra clicks fall through (Stop / Reset / Open Tasks appeared dead).
     @ViewBuilder
     func panelChromeSurface() -> some View {
@@ -43,7 +43,6 @@ public extension View {
         }
     }
 }
-
 public struct SurfaceGroup<Content: View>: View {
     private let content: Content
 
@@ -59,3 +58,16 @@ public struct SurfaceGroup<Content: View>: View {
         }
     }
 }
+
+#if DEBUG
+#Preview("Surface Group") {
+    SurfaceGroup {
+        HStack(spacing: AppSpacing.s) {
+            Image(systemName: AppSymbols.Timer.pause)
+            Text("Surface content")
+        }
+        .padding()
+    }
+    .padding()
+}
+#endif

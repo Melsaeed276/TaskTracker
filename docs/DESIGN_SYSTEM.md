@@ -242,6 +242,10 @@ automatic system menu-bar tinting and reliable `MenuBarExtra` rendering without 
 - iPhone gets tabs; iPad gets a sidebar, from iOS 18 (plan §22).
 - Generous touch targets (minimum 44pt).
 - Swipe actions for quick operations (Pool→Today).
+- Today and Pool use a shared bottom quick-entry control instead of an inline list row. It sits in the
+  bottom safe area above the tab bar, rises above the keyboard when focused, and shows existing-task
+  suggestions above the field like iPhone Spotlight. This keeps capture thumb-reachable while preserving
+  the task list as content.
 - Task editing as a sheet (title, notes, scheduled day, priority, start-timer-for-task, **Time Spent**
   log with total / add-edit-delete adjustments / hide session from total, full-width Save + Delete).
   Completing a Today task removes it from the Today list immediately; reopen from Pool → Completed.
@@ -251,8 +255,17 @@ automatic system menu-bar tinting and reliable `MenuBarExtra` rendering without 
   linked task when `relatedTaskID` is set. Hidden on the Timer tab (full controls live there). While
   the linked task’s edit sheet is open, the same strip appears **inside the sheet** without the Open
   Task control (already on that task).
-- Timer presets (15/25/30/45/60). When the session was started from a task, the Timer tab shows an
-  **Open task** button that presents that task’s edit sheet on Today or Pool.
+- The iPhone Timer tab is a fixed, non-scrolling control surface. The large time face owns the upper
+  content area; setup and actions live in the lower thumb zone near the tab bar.
+- Timer setup is bottom-first: when idle in Timer mode, a compact setup dock sits directly above the
+  action row with **Choose task / selected task** and timer presets (15/25/30/45/60). Start links the
+  session to the selected task via `relatedTaskID`; **No task** remains available for standalone focus.
+- Active timer controls are one row in the bottom dock: primary Pause/Resume, compact Stop, and compact
+  Reset. Buttons use tinted backgrounds and a pressed scale/opacity animation, not `navigationSurface()`
+  or floating glass backgrounds. The dock is visually close to, but not replacing, the native tab bar.
+- Active linked sessions show the linked task in the bottom dock above the action row; tapping opens the
+  task on Today or Pool when available. A paused active session resumes the remaining time; stopped
+  sessions are not revived.
 - Live Activities for the active timer (**iOS/iPadOS only** — ActivityKit has no macOS authoring
   surface; a Mac may *mirror* an iPhone Live Activity via Continuity, but apps cannot start one on
   macOS). On Mac, the equivalent glance is the **menu-bar status item**: app icon when idle,
@@ -275,26 +288,33 @@ automatic system menu-bar tinting and reliable `MenuBarExtra` rendering without 
 ## Timer Dual Display Modes
 
 The Timer surface presents two presentation modes over the **same** `ActiveTimerController` state —
-the domain still has one countdown session and no count-up mode. The modes are swapped with a
-`TimerDisplayModePager` (page dots + swipe on iOS/watchOS; dot buttons on macOS).
+the domain still has one countdown session and no independent count-up timer. The mode switch is
+presentation-only; timer arithmetic, remaining time, elapsed time, fire dates, pause, resume, stop,
+and reset remain in AppFeature/TimerDomain.
 
-| Page | Style | Primary readout |
+| Mode | iPhone style | Primary readout |
 |---|---|---|
-| **Timer** | `TimerCountdownRow` (list row) | Large thin monospaced remaining time + preset duration label (`25 min` / `3 hr`), inline circular Pause/Resume on the right |
-| **Stopwatch** | `StopwatchAnalogFace` (Canvas dial) | Elapsed on an analog face + digital `MM:SS.cs`; wall-clock finish time in red (e.g. `Ends 2:30 PM`) |
+| **Timer** | Large fixed digital face + bottom setup/action dock | Remaining time, preset duration label (`25 min` / `3 hr`), and idle/active status |
+| **Stopwatch** | Square rounded digital panel | Elapsed `MM:SS.cs`; tapping the panel triggers the same primary Start/Pause/Resume action as the bottom button |
+
+macOS and watchOS may still use their compact/shared components (`TimerCountdownRow`,
+`StopwatchAnalogFace`, or `TimerDisplayModePager`) where those fit the available surface better. The
+iPhone layout intentionally diverges because it optimizes for one-handed setup and bottom-reachable
+actions.
 
 ### Color semantics
 
-- **Elapsed** digital readout and the analog hands use `.orange` (`TimerDisplayTokens.stopwatchHandColor`) —
-  the Apple stopwatch accent.
-- **Finish time** (`endTimeText`) is `.red` (`stopwatchEndTimeColor`); hidden when idle. This is the only
-  place red is used in the timer surface — it is a text label (not a color-only status).
+- **Elapsed** stopwatch readout uses monospaced digits and a subdued square panel so Stopwatch mode is
+  visually distinct from Timer mode without introducing a separate timing model.
+- **Finish time** (`endTimeText`) remains available to shared stopwatch components, but the iPhone
+  Stopwatch mode hides it to keep the square panel focused on elapsed time.
 - The inline pause button ring is `.orange` (`timerPauseRingColor`) with an SF Symbol, so the state is
   conveyed by icon + label, never color alone.
 
 ### Platform sizing
 
-- **iOS** — dial `maxDiameter` 280; countdown headline 64 pt.
+- **iPhone** — fixed non-scrolling Timer tab; countdown headline 64 pt; Stopwatch mode uses a square
+  rounded digital panel rather than the shared analog dial.
 - **macOS Task Hub pane** — dial `maxDiameter` 280.
 - **macOS menu-bar panel** — list-row timer page **only** (the dial is too small to be useful there);
   `showsStopwatch: false` on `TimerSectionView`.
@@ -308,12 +328,14 @@ the domain still has one countdown session and no count-up mode. The modes are s
 - The inline pause button is 48 pt (≥ the 44 pt floor) and is a **separate** accessibility element, not
   combined into the row.
 - No hand animation beyond `TimelineView` ticks — Reduce Motion is honoured automatically.
-- VoiceOver labels: timer page reads `"<duration> timer, <remaining> remaining"`; stopwatch page reads
-  `"Stopwatch, elapsed <MM:SS.cs>, <end time>"` when running.
-- Identifiers: `timer.display`, `timer.inlinePause`, `timer.stopwatchDial`,
-  `timer.stopwatchStartPause`, `timer.stopwatchStop`, and (macOS pager dots) `timer.pageDot.timer` /
-  `timer.pageDot.stopwatch`. Container identifiers are deliberately **not** applied to the pager pages
-  or the countdown row — a `.accessibilityIdentifier` on a non-element container propagates to every
+- VoiceOver labels: timer page reads `"Timer, <remaining> remaining"`; stopwatch page reads
+  `"Stopwatch, elapsed <MM:SS.cs>"`. The task selector exposes whether a selected task will be linked
+  before Start.
+- Identifiers: iPhone uses `timer.display`, `timer.stopwatchDigital`, `timer.focusTarget`,
+  `timer.primaryAction`, `timer.stop`, and `timer.reset`. Shared compact components still expose
+  `timer.inlinePause`, `timer.stopwatchDial`, and (macOS pager dots) `timer.pageDot.timer` /
+  `timer.pageDot.stopwatch`. Container identifiers are deliberately **not** applied to pager pages or
+  countdown rows — a `.accessibilityIdentifier` on a non-element container propagates to every
   descendant and clobbers their individual identifiers (verified via the XCUITest accessibility tree).
 
 ---

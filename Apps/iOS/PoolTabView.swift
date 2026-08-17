@@ -20,21 +20,7 @@ struct PoolTabView: View {
             List {
                 if pool.showMode == .active {
                     Section {
-                        HStack(spacing: AppSpacing.s) {
-                            Image(systemName: AppSymbols.Tasks.add)
-                                .foregroundStyle(Color.accentColor)
-                                .font(.headline)
-                            TextField("New reminder", text: $draft)
-                                .submitLabel(.done)
-                                .accessibilityIdentifier("pool.newTaskField")
-                                .onSubmit {
-                                    let title = draft
-                                    draft = ""
-                                    Swift.Task { await pool.quickAdd(title: title) }
-                                }
-                        }
-                        .padding(.vertical, AppSpacing.xs)
-                        Text("Unscheduled reminders live here.")
+                        Text("All active tasks live here, including Today tasks.")
                             .font(.footnote)
                             .foregroundStyle(.secondary)
                     }
@@ -44,6 +30,23 @@ struct PoolTabView: View {
                     ForEach(pool.visibleTasks) { task in
                         poolRow(task)
                     }
+                }
+            }
+            .safeAreaInset(edge: .bottom, spacing: 0) {
+                if pool.showMode == .active {
+                    TaskQuickEntryView(
+                        placeholder: "Add or search task",
+                        draft: $draft,
+                        suggestions: matchingActiveTasks,
+                        onSubmit: { title in
+                            Swift.Task { await pool.quickAdd(title: title) }
+                        },
+                        onSelectSuggestion: { task in
+                            draft = ""
+                            editingTask = task
+                        }
+                    )
+                    .accessibilityIdentifier("pool.newTaskField")
                 }
             }
             .listStyle(.insetGrouped)
@@ -129,14 +132,16 @@ struct PoolTabView: View {
                     if task.isCompleted {
                         await pool.uncomplete(task)
                         await today.reload()
+                    } else {
+                        await pool.archive(task)
+                        await today.reload()
                     }
                 }
             } label: {
                 TaskCompletionMark(isCompleted: task.isCompleted, tint: .accentColor)
             }
-            .buttonStyle(.plain)
-            .disabled(!task.isCompleted)
-            .accessibilityLabel(task.isCompleted ? "Mark incomplete" : "Incomplete")
+            .buttonStyle(.borderless)
+            .accessibilityLabel(task.isCompleted ? "Mark incomplete" : "Mark done")
 
             VStack(alignment: .leading, spacing: AppSpacing.xs) {
                 HStack(spacing: AppSpacing.xs) {
@@ -162,7 +167,7 @@ struct PoolTabView: View {
                 }
             }
             Spacer()
-            if pool.showMode == .active {
+            if pool.showMode == .active, task.scheduledDay != nil {
                 Image(systemName: AppSymbols.Tasks.scheduleToday)
                     .font(.footnote.weight(.semibold))
                     .foregroundStyle(.secondary)
@@ -171,17 +176,32 @@ struct PoolTabView: View {
         .padding(.vertical, AppSpacing.xs)
         .contentShape(Rectangle())
         .onTapGesture { editingTask = task }
+        .swipeActions(edge: .leading, allowsFullSwipe: pool.showMode == .active) {
+            if pool.showMode == .active {
+                Button {
+                    Swift.Task {
+                        await pool.archive(task)
+                        await today.reload()
+                    }
+                } label: {
+                    Image(systemName: AppSymbols.Tasks.complete)
+                }
+                .accessibilityLabel("Done")
+                .tint(.green)
+            }
+        }
         .swipeActions(edge: .trailing, allowsFullSwipe: pool.showMode == .active) {
             if pool.showMode == .active {
                 Button {
                     Swift.Task {
-                        await pool.scheduleForToday(task)
+                        await pool.archive(task)
                         await today.reload()
                     }
                 } label: {
-                    Label("Today", systemImage: AppSymbols.Tasks.scheduleToday)
+                    Label("Archive", systemImage: "archivebox")
+                        .labelStyle(.titleAndIcon)
                 }
-                .tint(.accentColor)
+                .tint(.orange)
             } else {
                 Button {
                     Swift.Task {
@@ -190,6 +210,7 @@ struct PoolTabView: View {
                     }
                 } label: {
                     Label("Reopen", systemImage: AppSymbols.Tasks.incomplete)
+                        .labelStyle(.titleAndIcon)
                 }
                 .tint(.accentColor)
             }
@@ -198,6 +219,7 @@ struct PoolTabView: View {
                 Swift.Task { await pool.delete(task) }
             } label: {
                 Label("Delete", systemImage: AppSymbols.Tasks.delete)
+                    .labelStyle(.titleAndIcon)
             }
         }
         .contextMenu {
@@ -238,6 +260,18 @@ struct PoolTabView: View {
         }
     }
 
+    private var matchingActiveTasks: [Task] {
+        let query = normalized(draft)
+        guard !query.isEmpty else { return [] }
+        return pool.tasks.filter {
+            !$0.isCompleted && normalized($0.title).contains(query)
+        }
+    }
+
+    private func normalized(_ title: String) -> String {
+        title.trimmingCharacters(in: .whitespacesAndNewlines).localizedLowercase
+    }
+
     private func presentTaskIfNeeded(_ id: UUID?) {
         guard let id else { return }
         guard let task = pool.tasks.first(where: { $0.id == id })
@@ -247,3 +281,41 @@ struct PoolTabView: View {
         taskIDToPresent = nil
     }
 }
+
+#if DEBUG
+#Preview("Pool — Active") {
+    let pool = PreviewMocks.pool()
+    PoolTabView(
+        pool: pool,
+        today: PreviewMocks.today(),
+        timer: PreviewMocks.idleTimer(),
+        taskIDToPresent: .constant(nil),
+        presentedTaskID: .constant(nil)
+    )
+    .task { await pool.reload() }
+}
+
+#Preview("Pool — Completed") {
+    let pool = PreviewMocks.pool(showMode: .completed)
+    PoolTabView(
+        pool: pool,
+        today: PreviewMocks.today(),
+        timer: PreviewMocks.idleTimer(),
+        taskIDToPresent: .constant(nil),
+        presentedTaskID: .constant(nil)
+    )
+    .task { await pool.reload() }
+}
+
+#Preview("Pool — Search Filter") {
+    let pool = PreviewMocks.pool(searchText: "renew")
+    PoolTabView(
+        pool: pool,
+        today: PreviewMocks.today(),
+        timer: PreviewMocks.idleTimer(),
+        taskIDToPresent: .constant(nil),
+        presentedTaskID: .constant(nil)
+    )
+    .task { await pool.reload() }
+}
+#endif

@@ -41,3 +41,23 @@ public struct AppTabView<SelectionValue: Hashable, Content: View>: View {
         #endif
     }
 }
+#if DEBUG
+private struct AppTabViewPreview: View {
+    @State var selection = 0
+
+    var body: some View {
+        AppTabView(selection: $selection) {
+            Text("Timer")
+                .tabItem { Label("Timer", systemImage: AppSymbols.Navigation.timer) }
+                .tag(0)
+            Text("Today")
+                .tabItem { Label("Today", systemImage: AppSymbols.Navigation.today) }
+                .tag(1)
+        }
+    }
+}
+
+#Preview {
+    AppTabViewPreview()
+}
+#endif

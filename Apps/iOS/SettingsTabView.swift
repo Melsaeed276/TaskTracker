@@ -65,3 +65,8 @@ struct SettingsTabView: View {
         await refreshStatus()
     }
 }
+#if DEBUG
+#Preview("Settings") {
+    SettingsTabView()
+}
+#endif

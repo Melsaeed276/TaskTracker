@@ -191,7 +191,7 @@ struct RootTabView: View {
                                 .symbolRenderingMode(.hierarchical)
                                 .foregroundStyle(.secondary)
 
-                            Text("Type a task title, then press Search to add it.")
+                            Text("Type a task title, then tap Add to create it.")
                                 .foregroundStyle(.secondary)
                         }
                         .frame(maxWidth: .infinity)

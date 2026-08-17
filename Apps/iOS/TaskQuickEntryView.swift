@@ -28,6 +28,17 @@ struct TaskQuickEntryView: View {
                     .submitLabel(.done)
                     .focused($isFocused)
                     .onSubmit(submitDraft)
+                    .toolbar {
+                        ToolbarItemGroup(placement: .keyboard) {
+                            Spacer()
+                            Button {
+                                submitDraft()
+                            } label: {
+                                Label("Add", systemImage: AppSymbols.Tasks.add)
+                            }
+                            .disabled(draft.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty)
+                        }
+                    }
 
                 if !draft.isEmpty {
                     Button {
@@ -109,7 +120,8 @@ struct TaskQuickEntryView: View {
     }
 
     private func submitDraft() {
-        let title = draft
+        let title = draft.trimmingCharacters(in: .whitespacesAndNewlines)
+        guard !title.isEmpty else { return }
         draft = ""
         isFocused = false
         onSubmit(title)

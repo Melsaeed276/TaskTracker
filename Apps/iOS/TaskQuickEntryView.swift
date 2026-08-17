@@ -40,16 +40,16 @@ struct TaskQuickEntryView: View {
                         }
                     }
 
-                if !draft.isEmpty {
-                    Button {
-                        draft = ""
-                    } label: {
-                        Image(systemName: "xmark.circle.fill")
-                            .foregroundStyle(.secondary)
-                    }
-                    .buttonStyle(.plain)
-                    .accessibilityLabel("Clear")
+                Button {
+                    submitDraft()
+                } label: {
+                    Image(systemName: AppSymbols.Tasks.add)
+                        .font(.headline.weight(.semibold))
+                        .foregroundStyle(Color.accentColor)
                 }
+                .buttonStyle(.plain)
+                .disabled(draft.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty)
+                .accessibilityLabel("Add Task")
             }
             .padding(.horizontal, AppSpacing.m)
             .frame(minHeight: 52)

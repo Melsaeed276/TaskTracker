@@ -10,6 +10,7 @@ struct TaskTrackerMacApp: App {
     static let taskHubWindowID = "task-hub"
 
     @NSApplicationDelegateAdaptor(AppDelegate.self) private var appDelegate
+    @AppStorage(AppearancePreference.storageKey) private var appearance: AppearancePreference = .auto
 
     let timerController: ActiveTimerController
     let todayController: TodayController
@@ -18,6 +19,7 @@ struct TaskTrackerMacApp: App {
     private let remoteChangeCoordinator: RemoteChangeCoordinator
 
     init() {
+        LanguagePreference.shared.apply()
         let isUITesting = ProcessInfo.processInfo.arguments.contains("--ui-testing")
         let container = try! (
             isUITesting
@@ -55,11 +57,13 @@ struct TaskTrackerMacApp: App {
                 pool: poolController,
                 timer: timerController
             )
+            .preferredColorScheme(appearance.colorScheme)
         }
         .defaultSize(width: 880, height: 560)
 
         Settings {
             PreferencesView()
+                .preferredColorScheme(appearance.colorScheme)
         }
     }
 }
@@ -121,12 +125,12 @@ private struct MenuBarStatusLabel: View {
             }
             .accessibilityLabel(
                 timer.isActive
-                    ? (timer.isPaused ? "Timer paused" : "Timer running")
-                    : "TaskTracker"
+                    ? (timer.isPaused ? String(localized: "Timer paused") : String(localized: "Timer running"))
+                    : String(localized: "TaskTracker")
             )
         }
         .contextMenu {
-            Button("Quit TaskTracker") {
+            Button(String(localized: "Quit TaskTracker")) {
                 NSApp.terminate(nil)
             }
         }
@@ -141,8 +145,8 @@ private enum MenuBarPanelTab: String, CaseIterable, Identifiable {
 
     var title: String {
         switch self {
-        case .today: "Today"
-        case .timer: "Timer"
+        case .today: String(localized: "Today")
+        case .timer: String(localized: "Timer")
         }
     }
 }
@@ -299,7 +303,7 @@ private struct MenuBarPanel: View {
             .buttonStyle(.plain)
             .keyboardShortcut("t", modifiers: [.command])
             .floatingControlSurface()
-            .accessibilityLabel("Open task hub")
+            .accessibilityLabel(String(localized: "Open task hub"))
             .accessibilityIdentifier("menubar.openTasksButton")
         }
         .padding(AppSpacing.m)
@@ -350,7 +354,7 @@ private struct MenuBarTodaySection: View {
             }
 
             if today.tasks.isEmpty {
-                Text("No tasks for today.")
+                Text(String(localized: "No tasks for today."))
                     .font(.caption)
                     .foregroundStyle(.secondary)
                     .frame(maxWidth: .infinity, alignment: .leading)
@@ -374,9 +378,9 @@ private struct MenuBarTodaySection: View {
                                         .contentShape(Rectangle())
                                 }
                                 .buttonStyle(.plain)
-                                .help(task.isCompleted ? "Mark incomplete" : "Mark complete")
+                                .help(task.isCompleted ? String(localized: "Mark incomplete") : String(localized: "Mark complete"))
                                 .accessibilityLabel(
-                                    "\(task.title), \(task.isCompleted ? "Mark incomplete" : "Mark complete")"
+                                    String(localized: "\(task.title), \(task.isCompleted ? String(localized: "Mark incomplete") : String(localized: "Mark complete"))")
                                 )
                                 .accessibilityIdentifier("menubar.today.completeButton")
 
@@ -399,8 +403,8 @@ private struct MenuBarTodaySection: View {
                                     .contentShape(Rectangle())
                                 }
                                 .buttonStyle(.borderless)
-                                .help("Open details")
-                                .accessibilityLabel("Open details for \(task.title)")
+                                .help(String(localized: "Open details"))
+                                .accessibilityLabel(String(localized: "Open details for \(task.title)"))
                                 .accessibilityIdentifier("menubar.today.taskDetailsButton")
 
                                 // Always enabled: starting while another session is active supersedes it
@@ -412,8 +416,8 @@ private struct MenuBarTodaySection: View {
                                 }
                                 .buttonStyle(.borderedProminent)
                                 .controlSize(.small)
-                                .help("Run (replaces any current focus session)")
-                                .accessibilityLabel("Run \(task.title)")
+                                .help(String(localized: "Run (replaces any current focus session)"))
+                                .accessibilityLabel(String(localized: "Run \(task.title)"))
                                 .accessibilityIdentifier("menubar.today.runButton")
                             }
                         }
@@ -481,7 +485,7 @@ private struct MenuBarTaskEditForm: View {
                         )
                         .accessibilityIdentifier("menubar.today.editForm.datePicker")
                     } else {
-                        Text("Unscheduled tasks move to the Pool.")
+                        Text(String(localized: "Unscheduled tasks move to the Pool."))
                             .font(.caption)
                             .foregroundStyle(.secondary)
                     }
@@ -504,7 +508,7 @@ private struct MenuBarTaskEditForm: View {
 
                         // Start is always available: an active/paused session is superseded (not blocked).
                         // Pause + Resume on the Timer tab continues the same session; Stop ends it for good.
-                        Button(isTimerActive ? "Replace Timer" : "Start Timer", action: onStartTimer)
+                        Button(isTimerActive ? String(localized: "Replace Timer") : String(localized: "Start Timer"), action: onStartTimer)
                             .padding(.horizontal, AppSpacing.m)
                             .padding(.vertical, AppSpacing.s)
                             .floatingControlSurface()
@@ -514,8 +518,8 @@ private struct MenuBarTaskEditForm: View {
                     if isTimerActive {
                         Text(
                             isTimerPaused
-                                ? "A focus session is paused. Resume it from the Timer tab to continue, or replace it here. Stop ends it permanently."
-                                : "A focus session is running. Use Pause/Resume on the Timer tab to continue later. Starting here replaces it."
+                                ? String(localized: "A focus session is paused. Resume it from the Timer tab to continue, or replace it here. Stop ends it permanently.")
+                                : String(localized: "A focus session is running. Use Pause/Resume on the Timer tab to continue later. Starting here replaces it.")
                         )
                         .font(.caption)
                         .foregroundStyle(.secondary)
@@ -526,7 +530,7 @@ private struct MenuBarTaskEditForm: View {
                     if onDelete != nil {
                         Divider()
 
-                        Button("Delete Task", role: .destructive) {
+                        Button(String(localized: "Delete Task"), role: .destructive) {
                             isConfirmingDelete = true
                         }
                         .frame(maxWidth: .infinity, alignment: .center)
@@ -556,12 +560,12 @@ private struct MenuBarTaskEditForm: View {
         }
         .frame(maxWidth: .infinity, maxHeight: .infinity, alignment: .topLeading)
         .confirmationDialog(
-            "Delete this task?",
+            String(localized: "Delete this task?"),
             isPresented: $isConfirmingDelete,
             titleVisibility: .visible
         ) {
-            Button("Delete Task", role: .destructive) { onDelete?() }
-            Button("Cancel", role: .cancel) {}
+            Button(String(localized: "Delete Task"), role: .destructive) { onDelete?() }
+            Button(String(localized: "Cancel"), role: .cancel) {}
         }
         .task { titleFocused = true }
     }

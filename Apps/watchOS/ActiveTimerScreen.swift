@@ -36,18 +36,18 @@ struct ActiveTimerScreen: View {
 
             if !timer.isActive {
                 TimerControlButton(
-                    title: "Start",
+                    title: String(localized: "Start"),
                     systemImage: AppSymbols.Timer.resume,
                     tone: .positive,
                     diameter: 78
                 ) {
                     Task { await performPrimaryAction() }
                 }
-                .accessibilityLabel("Start timer")
+                .accessibilityLabel(String(localized: "Start timer"))
             } else {
                 HStack(spacing: AppSpacing.s) {
                     TimerControlButton(
-                        title: timer.isPaused ? "Resume" : "Pause",
+                        title: timer.isPaused ? String(localized: "Resume") : String(localized: "Pause"),
                         systemImage: primarySymbol,
                         tone: timer.isPaused ? .positive : .neutral,
                         diameter: 66
@@ -57,7 +57,7 @@ struct ActiveTimerScreen: View {
                     .accessibilityLabel(primaryLabel)
 
                     TimerControlButton(
-                        title: "Stop",
+                        title: String(localized: "Stop"),
                         systemImage: AppSymbols.Timer.stop,
                         tone: .caution,
                         diameter: 66
@@ -67,7 +67,7 @@ struct ActiveTimerScreen: View {
                             await timer.reload()
                         }
                     }
-                    .accessibilityLabel("Stop timer")
+                    .accessibilityLabel(String(localized: "Stop timer"))
                 }
             }
         }
@@ -76,8 +76,8 @@ struct ActiveTimerScreen: View {
     }
 
     private var primaryLabel: String {
-        if !timer.isActive { return "Start" }
-        return timer.isPaused ? "Resume" : "Pause"
+        if !timer.isActive { return String(localized: "Start") }
+        return timer.isPaused ? String(localized: "Resume") : String(localized: "Pause")
     }
 
     private var primarySymbol: String {

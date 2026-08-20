@@ -10,6 +10,12 @@ options:
     macOS: "14.0"
     iOS: "17.0"
     watchOS: "10.0"
+  developmentRegion: en
+  knownRegions:
+    - en
+    - tr
+    - ar
+    - Base
   # Drop XcodeGen's blue folder refs for local packages (keeps XCLocalSwiftPackageReference).
   # Without this, SourceKit warns that *Tests sources are not under Tests/<Target>.
   postGenCommand: python3 scripts/strip-local-package-folder-refs.py
@@ -41,6 +47,7 @@ targets:
     platform: macOS
     sources:
       - Apps/macOS
+      - Apps/Localization
       - Design/AppIcon/AppIcon.icon
     dependencies:
       - package: AppFeature
@@ -68,7 +75,11 @@ targets:
     platform: iOS
     sources:
       - Apps/iOS
+      - Apps/Localization
       - path: Apps/Shared/LiveActivity
+      - path: Apps/iOS/Settings.bundle
+        type: folder
+        buildPhase: resources
       - Design/AppIcon/AppIcon.icon
     dependencies:
       - package: AppFeature
@@ -109,6 +120,7 @@ targets:
     platform: iOS
     sources:
       - Apps/iOSWidget
+      - Apps/Localization
       - path: Apps/Shared/LiveActivity
     settings:
       base:
@@ -132,6 +144,7 @@ targets:
     platform: watchOS
     sources:
       - Apps/watchOS
+      - Apps/Localization
       - Design/AppIcon/AppIcon.icon
     dependencies:
       - package: AppFeature

@@ -259,7 +259,9 @@ automatic system menu-bar tinting and reliable `MenuBarExtra` rendering without 
 - Task editing as a sheet (title, notes, scheduled day, priority, start-timer-for-task, **Time Spent**
   log with total / add-edit-delete adjustments / hide session from total, full-width Save + Delete).
   Completing a Today task removes it from the Today list immediately; reopen from Pool → Completed.
-  Pool supports Active / Completed show modes and sort (newest, oldest, title, priority).
+  Pool uses Reminders-style category cards for Today, All Tasks, Scheduled, Archived, and Completed,
+  plus sort (newest, oldest, title, priority). Scheduled includes active tasks with any scheduled day.
+  Archived is currently a UI category over completed tasks because the task model has no separate archived field.
   Active timer controls are not duplicated as an app-wide strip on non-Timer tabs; per-second countdown
   UI stays on the Timer screen and in task-specific timer controls.
 - The iPhone Timer tab is a fixed, non-scrolling control surface. The large time face owns the upper

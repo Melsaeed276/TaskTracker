@@ -32,8 +32,8 @@ struct AppDesignTests {
 
     @Test("navigation tab symbols are catalogue entries")
     func navigationTabSymbols() {
-        #expect(AppSymbols.Navigation.today == "sun.max")
-        #expect(AppSymbols.Navigation.pool == "tray.full")
+        #expect(AppSymbols.Navigation.today == "calendar.badge.plus")
+        #expect(AppSymbols.Navigation.pool == "rectangle.stack.badge.plus")
         #expect(AppSymbols.Navigation.timer == "timer")
         #expect(AppSymbols.Navigation.settings == "gearshape")
     }

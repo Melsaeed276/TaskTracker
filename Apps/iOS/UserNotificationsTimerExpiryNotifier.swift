@@ -17,8 +17,8 @@ struct UserNotificationsTimerExpiryNotifier: TimerExpiryNotifying {
         await cancelExpiry()
 
         let content = UNMutableNotificationContent()
-        content.title = "Timer finished"
-        content.body = "Your focus session is done."
+        content.title = String(localized: "Timer finished")
+        content.body = String(localized: "Your focus session is done.")
         content.sound = .default
 
         let components = Calendar.current.dateComponents(

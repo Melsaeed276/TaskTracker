@@ -13,10 +13,10 @@ public enum TaskPriority: Int, Sendable, Hashable, Codable, CaseIterable, Compar
 
     public var displayName: String {
         switch self {
-        case .none: return "None"
-        case .low: return "Low"
-        case .medium: return "Medium"
-        case .high: return "High"
+        case .none: return String(localized: "None")
+        case .low: return String(localized: "Low")
+        case .medium: return String(localized: "Medium")
+        case .high: return String(localized: "High")
         }
     }
 }

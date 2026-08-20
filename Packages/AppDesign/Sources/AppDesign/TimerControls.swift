@@ -159,7 +159,7 @@ public struct TaskTimerActionBar: View {
                         systemImage: isPaused ? AppSymbols.Timer.resume : AppSymbols.Timer.pause,
                         foreground: isPaused ? TimerControlButton.Tone.positive.color : .primary,
                         action: onPauseResume,
-                        accessibilityLabel: isPaused ? "Resume timer" : "Pause timer",
+                        accessibilityLabel: isPaused ? String(localized: "Resume timer") : String(localized: "Pause timer"),
                         accessibilityIdentifier: "taskTimerBar.pauseResume"
                     )
 
@@ -167,7 +167,7 @@ public struct TaskTimerActionBar: View {
                         systemImage: AppSymbols.Timer.stop,
                         foreground: TimerControlButton.Tone.caution.color,
                         action: onStop,
-                        accessibilityLabel: "Stop timer",
+                        accessibilityLabel: String(localized: "Stop timer"),
                         accessibilityIdentifier: "taskTimerBar.stop"
                     )
 
@@ -180,7 +180,7 @@ public struct TaskTimerActionBar: View {
                             systemImage: AppSymbols.Navigation.timer,
                             foreground: .primary,
                             action: onOpenTimer,
-                            accessibilityLabel: "Open Timer",
+                            accessibilityLabel: String(localized: "Open Timer"),
                             accessibilityIdentifier: "taskTimerBar.openTimer"
                         )
                     }
@@ -214,14 +214,14 @@ public struct TaskTimerActionBar: View {
             }
             .buttonStyle(.plain)
             .floatingControlSurface()
-            .accessibilityLabel("Open task \(title)")
+            .accessibilityLabel(String(localized: "Open task \(title)"))
             .accessibilityIdentifier("taskTimerBar.openTask")
 
             iconControl(
                 systemImage: AppSymbols.Navigation.taskHub,
                 foreground: .primary,
                 action: action,
-                accessibilityLabel: "Open task \(title)",
+                accessibilityLabel: String(localized: "Open task \(title)"),
                 accessibilityIdentifier: "taskTimerBar.openTask"
             )
         }

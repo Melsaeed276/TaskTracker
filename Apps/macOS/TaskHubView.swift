@@ -18,9 +18,9 @@ struct TaskHubView: View {
 
         var title: String {
             switch self {
-            case .today: return "Today"
-            case .pool: return "Pool"
-            case .timer: return "Timer"
+            case .today: return String(localized: "Today")
+            case .pool: return String(localized: "Pool")
+            case .timer: return String(localized: "Timer")
             }
         }
 
@@ -65,8 +65,8 @@ struct TaskHubView: View {
                 SettingsLink {
                     Image(systemName: AppSymbols.Navigation.settings)
                 }
-                .help("Preferences")
-                .accessibilityLabel("Preferences")
+                .help(String(localized: "Preferences"))
+                .accessibilityLabel(String(localized: "Preferences"))
                 .accessibilityIdentifier("taskHub.settingsButton")
             }
         }
@@ -178,8 +178,8 @@ private struct TodayPane: View {
                         .floatingControlSurface()
                         .help(
                             timer.isActive
-                                ? "Replaces the current focus session. Use Pause/Resume on Timer to continue later."
-                                : "Start a focus timer for this task"
+                                ? String(localized: "Replaces the current focus session. Use Pause/Resume on Timer to continue later.")
+                                : String(localized: "Start a focus timer for this task")
                         )
                     }
 
@@ -263,9 +263,9 @@ private struct TodayRow: View {
                 TaskCompletionMark(isCompleted: task.isCompleted, tint: .accentColor)
             }
             .buttonStyle(.borderless)
-            .help(task.isCompleted ? "Mark incomplete" : "Mark complete")
+            .help(task.isCompleted ? String(localized: "Mark incomplete") : String(localized: "Mark complete"))
             .accessibilityLabel(
-                "\(task.title), \(task.isCompleted ? "Mark incomplete" : "Mark complete")"
+                String(localized: "\(task.title), \(task.isCompleted ? String(localized: "Mark incomplete") : String(localized: "Mark complete"))")
             )
             .accessibilityIdentifier("taskHub.today.completeButton")
 
@@ -319,7 +319,7 @@ private struct PoolPane: View {
                 .font(.caption)
                 .foregroundStyle(.secondary)
 
-            List(pool.visibleTasks) { task in
+            List(pool.unscheduledTasks) { task in
                 PoolRow(task: task, pool: pool, today: today, timer: timer)
                     .padding(.vertical, AppSpacing.xs)
             }
@@ -363,8 +363,8 @@ private struct PoolRow: View {
                 Image(systemName: AppSymbols.Timer.resume)
             }
             .buttonStyle(.borderless)
-            .help("Start timer for task (replaces any current focus session)")
-            .accessibilityLabel("Start timer for task")
+            .help(String(localized: "Start timer for task (replaces any current focus session)"))
+            .accessibilityLabel(String(localized: "Start timer for task"))
 
             Button {
                 Swift.Task {
@@ -375,8 +375,8 @@ private struct PoolRow: View {
                 Image(systemName: AppSymbols.Tasks.scheduleToday)
             }
             .buttonStyle(.borderless)
-            .help("Schedule for today")
-            .accessibilityLabel("Schedule for today")
+            .help(String(localized: "Schedule for today"))
+            .accessibilityLabel(String(localized: "Schedule for today"))
 
             Button(role: .destructive) {
                 Swift.Task { await pool.delete(task) }
@@ -384,7 +384,7 @@ private struct PoolRow: View {
                 Image(systemName: AppSymbols.Tasks.delete)
             }
             .buttonStyle(.borderless)
-            .accessibilityLabel("Delete task")
+            .accessibilityLabel(String(localized: "Delete task"))
         }
     }
 }

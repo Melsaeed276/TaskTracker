@@ -45,16 +45,16 @@ struct TimerSectionView: View {
 
             if isConfirmingReset {
                 VStack(alignment: .leading, spacing: AppSpacing.s) {
-                    Text("Discard this session? Elapsed time will not be kept. Stop keeps it instead.")
+                    Text(String(localized: "Discard this session? Elapsed time will not be kept. Stop keeps it instead."))
                         .font(.caption)
                         .foregroundStyle(.secondary)
                         .fixedSize(horizontal: false, vertical: true)
                     HStack(spacing: AppSpacing.s) {
-                        Button("Cancel") {
+                        Button(String(localized: "Cancel")) {
                             isConfirmingReset = false
                         }
                         .accessibilityIdentifier("timer.resetCancelButton")
-                        Button("Discard", role: .destructive) {
+                        Button(String(localized: "Discard"), role: .destructive) {
                             isConfirmingReset = false
                             Swift.Task { await timer.reset() }
                         }
@@ -64,20 +64,20 @@ struct TimerSectionView: View {
                 .frame(maxWidth: .infinity, alignment: .leading)
                 .accessibilityIdentifier("timer.resetConfirmPanel")
             } else {
-                Button("Reset", role: .destructive) {
+                Button(String(localized: "Reset"), role: .destructive) {
                     isConfirmingReset = true
                 }
                 .font(.callout)
                 .disabled(!timer.isActive)
-                .accessibilityLabel("Reset timer")
+                .accessibilityLabel(String(localized: "Reset timer"))
                 .accessibilityIdentifier("timer.resetButton")
             }
 
             if timer.isActive {
                 Text(
                     timer.isPaused
-                        ? "Paused — Resume continues this session. Stop ends it permanently."
-                        : "Pause to take a break without ending the session. Stop ends it permanently."
+                        ? String(localized: "Paused — Resume continues this session. Stop ends it permanently.")
+                        : String(localized: "Pause to take a break without ending the session. Stop ends it permanently.")
                 )
                 .font(.caption)
                 .foregroundStyle(.secondary)
@@ -143,7 +143,7 @@ struct TimerSectionView: View {
 
     private var startButton: some View {
         TimerControlButton(
-            title: "Start",
+            title: String(localized: "Start"),
             systemImage: AppSymbols.Timer.resume,
             tone: .positive,
             diameter: controlDiameter
@@ -155,13 +155,13 @@ struct TimerSectionView: View {
             modifiers: [.command],
             isEnabled: useKeyboardShortcuts
         ))
-        .accessibilityLabel("Start timer")
+        .accessibilityLabel(String(localized: "Start timer"))
         .disabled(timer.isActive)
     }
 
     private var pauseResumeButton: some View {
         TimerControlButton(
-            title: timer.isPaused ? "Resume" : "Pause",
+            title: timer.isPaused ? String(localized: "Resume") : String(localized: "Pause"),
             systemImage: timer.isPaused ? AppSymbols.Timer.resume : AppSymbols.Timer.pause,
             tone: .neutral,
             diameter: controlDiameter
@@ -179,13 +179,13 @@ struct TimerSectionView: View {
             modifiers: [.command],
             isEnabled: useKeyboardShortcuts
         ))
-        .accessibilityLabel(timer.isPaused ? "Resume timer" : "Pause timer")
+        .accessibilityLabel(timer.isPaused ? String(localized: "Resume timer") : String(localized: "Pause timer"))
         .disabled(!timer.isActive)
     }
 
     private var stopButton: some View {
         TimerControlButton(
-            title: "Stop",
+            title: String(localized: "Stop"),
             systemImage: AppSymbols.Timer.stop,
             tone: .caution,
             diameter: controlDiameter
@@ -197,7 +197,7 @@ struct TimerSectionView: View {
             modifiers: [.command],
             isEnabled: useKeyboardShortcuts
         ))
-        .accessibilityLabel("Stop timer")
+        .accessibilityLabel(String(localized: "Stop timer"))
         .disabled(!timer.isActive)
     }
 }

@@ -5,6 +5,7 @@ import AppFeature
 
 @main
 struct TaskTrackerIOSApp: App {
+    @AppStorage(AppearancePreference.storageKey) private var appearance: AppearancePreference = .auto
     let timerController: ActiveTimerController
     let todayController: TodayController
     let poolController: PoolController
@@ -14,6 +15,7 @@ struct TaskTrackerIOSApp: App {
     private let remoteChangeCoordinator: RemoteChangeCoordinator
 
     init() {
+        LanguagePreference.shared.apply()
         let isUITesting = ProcessInfo.processInfo.arguments.contains("--ui-testing")
         let container = try! (
             isUITesting
@@ -55,6 +57,7 @@ struct TaskTrackerIOSApp: App {
                     )
                 }
             )
+            .preferredColorScheme(appearance.colorScheme)
         }
     }
 }

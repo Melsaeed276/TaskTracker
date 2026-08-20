@@ -21,6 +21,30 @@ public enum AppDuration {
     public static let slow: TimeInterval = 0.4
 }
 
+public enum AppearancePreference: String, CaseIterable, Sendable {
+    case auto
+    case light
+    case dark
+
+    public static let storageKey = "com.tasktracker.appearance"
+
+    public var colorScheme: ColorScheme? {
+        switch self {
+        case .auto: nil
+        case .light: .light
+        case .dark: .dark
+        }
+    }
+
+    public var label: String {
+        switch self {
+        case .auto: "Auto"
+        case .light: "Light"
+        case .dark: "Dark"
+        }
+    }
+}
+
 public enum TimerDisplayTokens {
     public static let stopwatchHandColor: Color = .orange
     public static let stopwatchEndTimeColor: Color = .red

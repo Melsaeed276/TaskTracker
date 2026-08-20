@@ -111,7 +111,7 @@ enum PreviewMocks {
 
     static func pool(
         _ tasks: [Task] = samplePool,
-        showMode: PoolShowMode = .active,
+        showMode: PoolShowMode = .allTasks,
         searchText: String = ""
     ) -> PoolController {
         let controller = PoolController(repository: PreviewTaskRepository(tasks: tasks))

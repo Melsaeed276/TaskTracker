@@ -12,8 +12,8 @@ struct TimerTabView: View {
 
         var title: String {
             switch self {
-            case .timer: return "Timer"
-            case .stopwatch: return "Stopwatch"
+            case .timer: return String(localized: "Timer")
+            case .stopwatch: return String(localized: "Stopwatch")
             }
         }
 
@@ -234,28 +234,28 @@ struct TimerTabView: View {
         .buttonStyle(.plain)
         .disabled(timer.isActive && relatedTask == nil)
         .accessibilityLabel(focusTargetTitle)
-        .accessibilityHint(timer.isActive ? "Open the linked task" : "Choose a task for this timer")
+        .accessibilityHint(timer.isActive ? String(localized: "Open the linked task") : String(localized: "Choose a task for this timer"))
         .accessibilityIdentifier("timer.focusTarget")
     }
 
     private var focusTargetTitle: String {
         if timer.isActive {
             if timer.relatedTaskID != nil, relatedTask == nil {
-                return "Linked task unavailable"
+                return String(localized: "Linked task unavailable")
             }
-            return relatedTask?.title ?? "Focus session"
+            return relatedTask?.title ?? String(localized: "Focus session")
         }
-        return selectedTask?.title ?? "Choose a task"
+        return selectedTask?.title ?? String(localized: "Choose a task")
     }
 
     private var focusTargetSubtitle: String {
         if timer.isActive {
             if timer.relatedTaskID != nil, relatedTask == nil {
-                return "Not on Today or in the Pool"
+                return String(localized: "Not on Today or in the Pool")
             }
-            return timer.isPaused ? "Paused with time left" : "Timer is linked and running"
+            return timer.isPaused ? String(localized: "Paused with time left") : String(localized: "Timer is linked and running")
         }
-        return selectedTask == nil ? "Optional - start without a task if needed" : "Timer will start linked to this task"
+        return selectedTask == nil ? String(localized: "Optional - start without a task if needed") : String(localized: "Timer will start linked to this task")
     }
 
     private var setupDock: some View {
@@ -281,8 +281,8 @@ struct TimerTabView: View {
     }
 
     private var statusTitle: String {
-        if !timer.isActive { return "Ready" }
-        return timer.isPaused ? "Paused" : "Running"
+        if !timer.isActive { return String(localized: "Ready") }
+        return timer.isPaused ? String(localized: "Paused") : String(localized: "Running")
     }
 
     private var statusSymbol: String {
@@ -310,12 +310,12 @@ struct TimerTabView: View {
                 .foregroundStyle(.secondary)
                 .lineLimit(1)
 
-            Text(timer.isActive ? "Focus session" : "Ready when you are")
+            Text(timer.isActive ? String(localized: "Focus session") : String(localized: "Ready when you are"))
                 .font(.footnote)
                 .foregroundStyle(.secondary)
         }
         .accessibilityElement(children: .combine)
-        .accessibilityLabel("Timer, \(timer.remainingListLabel(at: date) ?? idleRemainingLabel) remaining")
+        .accessibilityLabel(String(localized: "Timer, \(timer.remainingListLabel(at: date) ?? idleRemainingLabel) remaining"))
     }
 
     @ViewBuilder
@@ -333,7 +333,7 @@ struct TimerTabView: View {
                         .contentTransition(.numericText())
                         .accessibilityIdentifier("timer.stopwatchDigital")
 
-                    Text(timer.isActive ? "Tap to pause" : "Tap to start")
+                    Text(timer.isActive ? String(localized: "Tap to pause") : String(localized: "Tap to start"))
                         .font(.footnote.weight(.semibold))
                         .foregroundStyle(.secondary)
                         .lineLimit(1)
@@ -347,13 +347,13 @@ struct TimerTabView: View {
 //                    .strokeBorder(.secondary.opacity(0.14), lineWidth: 1)
 //            }
 
-            Text(timer.isActive ? "Elapsed time" : "Start to track elapsed time")
+            Text(timer.isActive ? String(localized: "Elapsed time") : String(localized: "Start to track elapsed time"))
                 .font(.footnote.weight(.semibold))
                 .foregroundStyle(.secondary)
                 .lineLimit(1)
         }
         .accessibilityElement(children: .combine)
-        .accessibilityLabel("Stopwatch, elapsed \(timer.elapsedStopwatchDigital(at: date))")
+        .accessibilityLabel(String(localized: "Stopwatch, elapsed \(timer.elapsedStopwatchDigital(at: date))"))
     }
 
     private var idleRemainingLabel: String {
@@ -365,8 +365,8 @@ struct TimerTabView: View {
     }
 
     private var stopwatchPrimaryTitle: String {
-        if !timer.isActive { return "Start" }
-        return timer.isPaused ? "Resume" : "Pause"
+        if !timer.isActive { return String(localized: "Start") }
+        return timer.isPaused ? String(localized: "Resume") : String(localized: "Pause")
     }
 
     private var stopwatchPrimarySymbol: String {
@@ -382,22 +382,22 @@ struct TimerTabView: View {
                         startFromPicker(taskID: nil)
                     } label: {
                         taskPickerRow(
-                            title: "No task",
-                            subtitle: "Start a standalone \(idleDurationLabel) timer",
+                            title: String(localized: "No task"),
+                            subtitle: String(localized: "Start a standalone \(idleDurationLabel) timer"),
                             isSelected: selectedTaskID == nil
                         )
                     }
                 }
 
                 if !availableTodayTasks.isEmpty {
-                    Section("Today") {
+                    Section(String(localized: "Today")) {
                         ForEach(availableTodayTasks) { task in
                             Button {
                                 startFromPicker(taskID: task.id)
                             } label: {
                                 taskPickerRow(
                                     title: task.title,
-                                    subtitle: taskPickerSubtitle(scope: "Today", task: task),
+                                    subtitle: taskPickerSubtitle(scope: String(localized: "Today"), task: task),
                                     isSelected: selectedTaskID == task.id
                                 )
                             }
@@ -406,14 +406,14 @@ struct TimerTabView: View {
                 }
 
                 if !availablePoolTasks.isEmpty {
-                    Section("Pool") {
+                    Section(String(localized: "Pool")) {
                         ForEach(availablePoolTasks) { task in
                             Button {
                                 startFromPicker(taskID: task.id)
                             } label: {
                                 taskPickerRow(
                                     title: task.title,
-                                    subtitle: taskPickerSubtitle(scope: "Pool", task: task),
+                                    subtitle: taskPickerSubtitle(scope: String(localized: "Pool"), task: task),
                                     isSelected: selectedTaskID == task.id
                                 )
                             }
@@ -432,11 +432,11 @@ struct TimerTabView: View {
     }
 
     private func taskPickerSubtitle(scope: String, task: Task) -> String {
-        let timerText = "Start \(idleDurationLabel)"
+        let timerText = String(localized: "Start \(idleDurationLabel)")
         if task.priority == .none {
             return "\(scope) · \(timerText)"
         }
-        return "\(scope) · \(task.priority.displayName) priority · \(timerText)"
+        return "\(scope) · \(task.priority.displayName) · \(timerText)"
     }
 
     private func taskPickerRow(title: String, subtitle: String, isSelected: Bool) -> some View {
@@ -492,7 +492,7 @@ struct TimerTabView: View {
                 .padding(.vertical, AppSpacing.s)
                 .foregroundStyle(selectedPresetMinutes == minutes ? Color.green : .primary)
                 .floatingControlSurface()
-                .accessibilityLabel("\(minutes) minutes")
+                .accessibilityLabel(String(localized: "\(minutes) minutes"))
                 .accessibilityIdentifier("timer.preset.\(minutes)")
             }
         }
@@ -509,19 +509,19 @@ struct TimerTabView: View {
         .buttonStyle(.plain)
         .foregroundStyle(.red)
         .disabled(!timer.isActive)
-        .accessibilityLabel("Reset timer")
+        .accessibilityLabel(String(localized: "Reset timer"))
         .accessibilityIdentifier("timer.reset")
         .confirmationDialog(
-            "Discard this session?",
+            String(localized: "Discard this session?"),
             isPresented: $isConfirmingReset,
             titleVisibility: .visible
         ) {
-            Button("Discard", role: .destructive) {
+            Button(String(localized: "Discard"), role: .destructive) {
                 Swift.Task { await timer.reset() }
             }
-            Button("Cancel", role: .cancel) {}
+            Button(String(localized: "Cancel"), role: .cancel) {}
         } message: {
-            Text("Its elapsed time will not be kept in history. Stop keeps it instead.")
+            Text(String(localized: "Its elapsed time will not be kept in history. Stop keeps it instead."))
         }
     }
 
@@ -548,7 +548,7 @@ struct TimerTabView: View {
 
                     if timer.isActive {
                         compactActionButton(
-                            title: "Stop",
+                            title: String(localized: "Stop"),
                             systemImage: AppSymbols.Timer.stop,
                             foreground: .red,
                             accessibilityIdentifier: "timer.stop"
@@ -628,19 +628,19 @@ struct TimerTabView: View {
         .background(.red.opacity(0.12), in: Circle())
         .disabled(!timer.isActive)
         .animation(.snappy(duration: AppDuration.fast), value: timer.isActive)
-        .accessibilityLabel("Reset timer")
+        .accessibilityLabel(String(localized: "Reset timer"))
         .accessibilityIdentifier("timer.reset")
         .confirmationDialog(
-            "Discard this session?",
+            String(localized: "Discard this session?"),
             isPresented: $isConfirmingReset,
             titleVisibility: .visible
         ) {
-            Button("Discard", role: .destructive) {
+            Button(String(localized: "Discard"), role: .destructive) {
                 Swift.Task { await timer.reset() }
             }
-            Button("Cancel", role: .cancel) {}
+            Button(String(localized: "Cancel"), role: .cancel) {}
         } message: {
-            Text("Its elapsed time will not be kept in history. Stop keeps it instead.")
+            Text(String(localized: "Its elapsed time will not be kept in history. Stop keeps it instead."))
         }
     }
 
@@ -649,8 +649,8 @@ struct TimerTabView: View {
         if timer.isActive {
             Text(
                 timer.isPaused
-                    ? "Paused - tap Resume to continue. Stop ends this session permanently."
-                    : "Pause to take a break. Stop ends this session permanently."
+                    ? String(localized: "Paused - tap Resume to continue. Stop ends this session permanently.")
+                    : String(localized: "Pause to take a break. Stop ends this session permanently.")
             )
             .font(.footnote)
             .foregroundStyle(.secondary)

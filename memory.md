@@ -77,6 +77,14 @@ Still outstanding:
 
 # Active Work
 
+**2026-08-18 — Pool improvements branch.** Branch `feature/pool-improvements` redesigns the iOS Pool
+screen around Reminders-style category cards: Today, All Tasks, Scheduled, Archived, and Completed. The
+controller now loads one all-task snapshot and filters `visibleTasks` by selected card, with counts per
+category and existing sort orders preserved. Scheduled includes active tasks with any scheduled day. The
+row-level Today add action appears for unscheduled tasks and tasks scheduled for a non-today day, then
+reschedules them to today. Archived currently maps to completed tasks because the domain model still has
+no separate archived field.
+
 **2026-08-17 — iOS native tab-bar Add/search branch.** Branch `feature/ios-tabbar-add-task` keeps
 the tab bar navigational by using SwiftUI's native `Tab(role: .search)` Add item on iOS 18+ with the
 outline `plus.rectangle` SF Symbol; on iOS 26+ the tab-bar item activates the system search-field morph via
@@ -649,3 +657,15 @@ relatedTaskID:)`. Active linked sessions show the task inside the timer face; pa
 the existing Resume flow for the remaining time. Bottom controls remain in a safe-area panel near the tab
 bar. Verified: iOS Debug build succeeds after the change; macOS/watchOS builds and AppFeature/AppDesign
 package tests passed before this cleanup in the same iteration.
+2026-08-18 — Search/Add tab empty state fix: replaced native `.symbolEffect(.drawOn)` with custom
+`AddTaskDrawOnIcon` (SwiftUI Path + `.trim(from:to:)` stroke animation, 0.7s easeInOut) because
+the native drawOn holds the symbol undrawn after nonRepeating completion and renders nothing on the
+iOS simulator at all (confirmed by probe app). Extracted `AddTaskEmptyState` view with centered layout.
+Added `.ignoresSafeArea(.keyboard, edges: .bottom)` so the keyboard doesn't push content upward.
+Tab bar label now uses static `Label("Add", systemImage:)` to avoid drawOn hiding unselected tab icons.
+Verified: icon visible and centered on simulator after animation, all three app builds succeed. Also
+fixed a pre-existing `Task.isInPool` bug (was `completedAt == nil`, now correctly
+`scheduledDay == nil && completedAt == nil` per `AGENTS.md` contract), which fixed a failing
+`TaskDomain` test. Updated stale `AppDesignTests` symbol expectations to match current
+`AppSymbols.Navigation` values (calendar.badge.plus / rectangle.stack.badge.plus). All 30 package
+tests pass.

@@ -1,0 +1,41 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE plist PUBLIC "-//Apple//DTD PLIST 1.0//EN" "http://www.apple.com/DTDs/PropertyList-1.0.dtd">
+<plist version="1.0">
+<dict>
+	<key>StringsTable</key>
+	<string>Root</string>
+	<key>PreferenceSpecifiers</key>
+	<array>
+		<dict>
+			<key>Type</key>
+			<string>PSGroupSpecifier</string>
+			<key>Label</key>
+			<string>Language</string>
+		</dict>
+		<dict>
+			<key>Type</key>
+			<string>PSMultiValueSpecifier</string>
+			<key>Title</key>
+			<string>Language</string>
+			<key>Key</key>
+			<string>com.tasktracker.language</string>
+			<key>DefaultValue</key>
+			<string></string>
+			<key>Values</key>
+			<array>
+				<string></string>
+				<string>en</string>
+				<string>tr</string>
+				<string>ar</string>
+			</array>
+			<key>Titles</key>
+			<array>
+				<string>Automatic</string>
+				<string>English</string>
+				<string>Türkçe</string>
+				<string>العربية</string>
+			</array>
+		</dict>
+	</array>
+</dict>
+</plist>

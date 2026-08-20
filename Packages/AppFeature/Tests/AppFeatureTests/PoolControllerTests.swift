@@ -110,7 +110,7 @@ struct PoolControllerTests {
         let task = try #require(controller.tasks.first)
 
         await controller.archive(task)
-        #expect(controller.tasks.isEmpty)
+        #expect(controller.visibleTasks.isEmpty)
     }
 
     @Test("delete removes the task")
@@ -171,8 +171,98 @@ struct PoolControllerTests {
         #expect(controller.visibleTasks.map(\.title) == ["Alpha", "Zebra"])
 
         await controller.uncomplete(controller.visibleTasks[0])
-        controller.showMode = .active
+        controller.showMode = .allTasks
         await controller.reload()
         #expect(controller.tasks.contains { $0.title == "Alpha" })
+    }
+
+    @Test("pool cards filter today, all tasks, scheduled, archived, and completed")
+    @MainActor
+    func cardFilters() async throws {
+        let (controller, repo, time) = try makeController()
+        await controller.quickAdd(title: "Inbox")
+        await controller.quickAdd(title: "Today")
+        await controller.quickAdd(title: "Tomorrow")
+        await controller.quickAdd(title: "Done")
+
+        let today = try #require(controller.tasks.first { $0.title == "Today" })
+        let tomorrow = try #require(controller.tasks.first { $0.title == "Tomorrow" })
+        let done = try #require(controller.tasks.first { $0.title == "Done" })
+        var calendar = Calendar(identifier: .gregorian)
+        calendar.timeZone = TimeZone(secondsFromGMT: 0)!
+        try await repo.upsert(TaskService.scheduleForToday(today, now: time.now, calendar: calendar))
+        try await repo.upsert(try TaskService.edit(
+            tomorrow,
+            title: tomorrow.title,
+            notes: tomorrow.notes,
+            now: time.now,
+            scheduledDay: DayKey(rawValue: "2023-11-15"),
+            applyScheduleAndPriority: true
+        ))
+        try await repo.upsert(try TaskService.complete(done, now: time.now))
+        await controller.reload()
+
+        controller.showMode = .today
+        #expect(controller.visibleTasks.map(\.title) == ["Today"])
+
+        controller.showMode = .allTasks
+        #expect(controller.visibleTasks.map(\.title).sorted() == ["Inbox", "Today", "Tomorrow"])
+
+        controller.showMode = .scheduled
+        #expect(controller.visibleTasks.map(\.title).sorted() == ["Today", "Tomorrow"])
+
+        controller.showMode = .archived
+        #expect(controller.visibleTasks.map(\.title) == ["Done"])
+
+        controller.showMode = .completed
+        #expect(controller.visibleTasks.map(\.title) == ["Done"])
+    }
+
+    @Test("unscheduled tasks preserve macOS Pool semantics")
+    @MainActor
+    func unscheduledTasks() async throws {
+        let (controller, repo, time) = try makeController()
+        await controller.quickAdd(title: "Inbox")
+        await controller.quickAdd(title: "Today")
+
+        let today = try #require(controller.tasks.first { $0.title == "Today" })
+        var calendar = Calendar(identifier: .gregorian)
+        calendar.timeZone = TimeZone(secondsFromGMT: 0)!
+        try await repo.upsert(TaskService.scheduleForToday(today, now: time.now, calendar: calendar))
+        await controller.reload()
+
+        #expect(controller.unscheduledTasks.map(\.title) == ["Inbox"])
+    }
+
+    @Test("Today action is needed for unscheduled and non-today scheduled active tasks")
+    @MainActor
+    func needsTodayAction() async throws {
+        let (controller, repo, time) = try makeController()
+        await controller.quickAdd(title: "Inbox")
+        await controller.quickAdd(title: "Today")
+        await controller.quickAdd(title: "Tomorrow")
+        await controller.quickAdd(title: "Done")
+
+        let today = try #require(controller.tasks.first { $0.title == "Today" })
+        let tomorrow = try #require(controller.tasks.first { $0.title == "Tomorrow" })
+        let done = try #require(controller.tasks.first { $0.title == "Done" })
+        var calendar = Calendar(identifier: .gregorian)
+        calendar.timeZone = TimeZone(secondsFromGMT: 0)!
+        try await repo.upsert(TaskService.scheduleForToday(today, now: time.now, calendar: calendar))
+        try await repo.upsert(try TaskService.edit(
+            tomorrow,
+            title: tomorrow.title,
+            notes: tomorrow.notes,
+            now: time.now,
+            scheduledDay: DayKey(rawValue: "2023-11-15"),
+            applyScheduleAndPriority: true
+        ))
+        try await repo.upsert(try TaskService.complete(done, now: time.now))
+        await controller.reload()
+
+        #expect(controller.needsTodayAction(for: try #require(controller.tasks.first { $0.title == "Inbox" })))
+        #expect(!controller.needsTodayAction(for: try #require(controller.tasks.first { $0.title == "Today" })))
+        #expect(controller.needsTodayAction(for: try #require(controller.tasks.first { $0.title == "Tomorrow" })))
+        #expect(!controller.needsTodayAction(for: try #require(controller.tasks.first { $0.title == "Done" })))
     }
 }

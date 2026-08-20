@@ -16,7 +16,7 @@ struct PoolTabView: View {
     @State private var scrollOffset: CGFloat = 0
 
     private var headerProgress: CGFloat {
-        min(max(scrollOffset / 100, 0), 1)
+        min(max(scrollOffset / 120, 0), 1)
     }
 
     var body: some View {
@@ -40,7 +40,6 @@ struct PoolTabView: View {
                     },
                     progress: headerProgress
                 )
-                .padding(.horizontal, AppSpacing.m)
                 .padding(.top, AppSpacing.s)
                 .animation(.easeInOut(duration: 0.15), value: headerProgress)
 
@@ -63,10 +62,10 @@ struct PoolTabView: View {
                 scrollOffset = max(-value, 0)
             }
             .navigationTitle("Pool")
+            .navigationBarTitleDisplayMode(.inline)
         }
         .background(Color(.systemGroupedBackground))
         .ignoresSafeArea()
-        .navigationTitle("Pool")
         .sheet(item: $editingTask, onDismiss: { presentedTaskID = nil }) { task in
             TaskEditSheet(
                 task: task,
@@ -270,14 +269,27 @@ private struct PoolControlPanel: View {
     let progress: CGFloat
 
     var body: some View {
-        VStack(alignment: .leading, spacing: AppSpacing.m - progress * 4) {
-            LazyVGrid(columns: [GridItem(.flexible()), GridItem(.flexible())], spacing: AppSpacing.s - progress * 3) {
+        VStack(spacing: 0) {
+            expandedView
+                .opacity(1 - progress)
+                .frame(height: (1 - progress) * .infinity, alignment: .top)
+                .clipped()
+
+            collapsedView
+                .opacity(progress)
+        }
+        .animation(.easeInOut(duration: 0.15), value: progress)
+    }
+
+    @ViewBuilder
+    private var expandedView: some View {
+        VStack(alignment: .leading, spacing: AppSpacing.m) {
+            LazyVGrid(columns: [GridItem(.flexible()), GridItem(.flexible())], spacing: AppSpacing.s) {
                 ForEach(PoolShowMode.allCases) { mode in
                     PoolCategoryCard(
                         mode: mode,
                         count: count(mode),
-                        isSelected: showMode == mode,
-                        progress: progress
+                        isSelected: showMode == mode
                     ) {
                         showMode = mode
                         onShowModeChanged()
@@ -320,12 +332,33 @@ private struct PoolControlPanel: View {
             .buttonStyle(.plain)
             .accessibilityIdentifier("pool.sortMenu")
         }
-        .padding(AppSpacing.m - progress * 6)
+        .padding(AppSpacing.m)
         .background(.background, in: RoundedRectangle(cornerRadius: 20, style: .continuous))
         .overlay {
             RoundedRectangle(cornerRadius: 20, style: .continuous)
                 .strokeBorder(.secondary.opacity(0.12), lineWidth: 1)
         }
+        .padding(.horizontal, AppSpacing.m)
+    }
+
+    @ViewBuilder
+    private var collapsedView: some View {
+        ScrollView(.horizontal, showsIndicators: false) {
+            HStack(spacing: AppSpacing.s) {
+                ForEach(PoolShowMode.allCases) { mode in
+                    PoolCompactChip(
+                        mode: mode,
+                        count: count(mode),
+                        isSelected: showMode == mode
+                    ) {
+                        showMode = mode
+                        onShowModeChanged()
+                    }
+                }
+            }
+            .padding(.horizontal, AppSpacing.m)
+        }
+        .padding(.vertical, AppSpacing.s)
     }
 }
 
@@ -333,7 +366,6 @@ private struct PoolCategoryCard: View {
     let mode: PoolShowMode
     let count: Int
     let isSelected: Bool
-    let progress: CGFloat
     let action: () -> Void
 
     private var symbolName: String {
@@ -348,30 +380,76 @@ private struct PoolCategoryCard: View {
 
     var body: some View {
         Button(action: action) {
-            VStack(alignment: .leading, spacing: AppSpacing.s - progress * 3) {
+            VStack(alignment: .leading, spacing: AppSpacing.s) {
                 HStack {
                     Image(systemName: symbolName)
-                        .font(.system(size: 20 - progress * 5, weight: .semibold))
+                        .font(.title3.weight(.semibold))
                         .symbolRenderingMode(.hierarchical)
                     Spacer()
                     Text("\(count)")
-                        .font(.system(size: 17 - progress * 3, weight: .semibold).monospacedDigit())
+                        .font(.headline.monospacedDigit())
                 }
 
                 Text(mode.displayName)
-                    .font(.system(size: 14 - progress * 2, weight: .semibold))
+                    .font(.subheadline.weight(.semibold))
                     .lineLimit(1)
             }
             .foregroundStyle(isSelected ? Color.accentColor : Color.primary)
-            .padding(AppSpacing.m - progress * 6)
+            .padding(AppSpacing.m)
             .frame(maxWidth: .infinity, alignment: .leading)
-            .frame(minHeight: 44 - progress * 10)
             .background(
                 isSelected ? Color.accentColor.opacity(0.14) : Color.secondary.opacity(0.08),
                 in: RoundedRectangle(cornerRadius: 18, style: .continuous)
             )
             .overlay {
                 RoundedRectangle(cornerRadius: 18, style: .continuous)
+                    .strokeBorder(isSelected ? Color.accentColor.opacity(0.45) : Color.secondary.opacity(0.12), lineWidth: 1)
+            }
+        }
+        .buttonStyle(.plain)
+        .accessibilityLabel(String(localized: "Show \(mode.displayName)"))
+        .accessibilityValue(String(localized: "\(count) tasks"))
+    }
+}
+
+private struct PoolCompactChip: View {
+    let mode: PoolShowMode
+    let count: Int
+    let isSelected: Bool
+    let action: () -> Void
+
+    private var symbolName: String {
+        switch mode {
+        case .today: return AppSymbols.Navigation.today
+        case .allTasks: return AppSymbols.Navigation.pool
+        case .scheduled: return "calendar"
+        case .archived: return "archivebox"
+        case .completed: return AppSymbols.Tasks.complete
+        }
+    }
+
+    var body: some View {
+        Button(action: action) {
+            HStack(spacing: AppSpacing.xs) {
+                Image(systemName: symbolName)
+                    .font(.caption.weight(.semibold))
+                    .symbolRenderingMode(.hierarchical)
+                Text(mode.displayName)
+                    .font(.caption.weight(.semibold))
+                    .lineLimit(1)
+                Text("\(count)")
+                    .font(.caption2.monospacedDigit())
+                    .foregroundStyle(.secondary)
+            }
+            .foregroundStyle(isSelected ? Color.accentColor : Color.primary)
+            .padding(.horizontal, AppSpacing.s)
+            .padding(.vertical, AppSpacing.xs + 2)
+            .background(
+                isSelected ? Color.accentColor.opacity(0.14) : Color.secondary.opacity(0.08),
+                in: Capsule()
+            )
+            .overlay {
+                Capsule()
                     .strokeBorder(isSelected ? Color.accentColor.opacity(0.45) : Color.secondary.opacity(0.12), lineWidth: 1)
             }
         }

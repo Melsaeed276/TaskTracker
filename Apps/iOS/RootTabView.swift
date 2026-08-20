@@ -20,15 +20,21 @@ struct RootTabView: View {
     @State private var lastContentTab: AppRootTab = .today
     @State private var isQuickTaskEntryPresented = false
     @State private var quickTaskDraft = ""
-    /// When set, Today or Pool presents the matching task’s edit sheet.
+    /// Triggers the draw-on animation each time the Add tab opens.
+    @State private var addTabAnimationID = 0
+    /// When set, Today or Pool presents the matching task's edit sheet.
     @State private var taskIDToPresent: UUID?
     /// Task currently shown in an edit sheet (Today or Pool).
     @State private var presentedTaskID: UUID?
+
+    @Environment(\.horizontalSizeClass) private var horizontalSizeClass
 
     @ViewBuilder
     var body: some View {
         if #available(iOS 18, *) {
             nativeSearchTabBody
+        } else if horizontalSizeClass == .regular {
+            iPadSplitBody
         } else {
             legacyTabBody
         }
@@ -43,7 +49,9 @@ struct RootTabView: View {
                 }
             }
             .onChange(of: selectedTab) { _, newValue in
-                if newValue != .addTask {
+                if newValue == .addTask {
+                    addTabAnimationID += 1
+                } else {
                     lastContentTab = newValue
                 }
             }
@@ -103,6 +111,76 @@ struct RootTabView: View {
         .task { await initialLoad() }
     }
 
+    private var iPadSplitBody: some View {
+        NavigationSplitView {
+            List {
+                Section("Tasks") {
+                    Button {
+                        selectedTab = .today
+                    } label: {
+                        Label("Today", systemImage: AppSymbols.Navigation.today)
+                            .foregroundStyle(selectedTab == .today ? Color.accentColor : Color.primary)
+                    }
+                    Button {
+                        selectedTab = .pool
+                    } label: {
+                        Label("Pool", systemImage: AppSymbols.Navigation.pool)
+                            .foregroundStyle(selectedTab == .pool ? Color.accentColor : Color.primary)
+                    }
+                }
+                Section("Focus") {
+                    Button {
+                        selectedTab = .timer
+                    } label: {
+                        Label("Timer", systemImage: AppSymbols.Navigation.timer)
+                            .foregroundStyle(selectedTab == .timer ? Color.accentColor : Color.primary)
+                    }
+                }
+            }
+            .navigationTitle("Task Tracker")
+        } detail: {
+            Group {
+                switch selectedTab {
+                case .today:
+                    todayTabContent
+                case .pool:
+                    poolTabContent
+                case .timer:
+                    timerTabContent
+                case .addTask:
+                    quickTaskSearchContent
+                case .settings:
+                    settingsTabContent
+                }
+            }
+            .overlay(alignment: .bottom) {
+                if isQuickTaskEntryPresented {
+                    quickTaskEntryOverlay
+                        .transition(.move(edge: .bottom).combined(with: .opacity))
+                }
+            }
+            .overlay(alignment: .bottomTrailing) {
+                if !isQuickTaskEntryPresented && selectedTab != .settings {
+                    quickTaskButton
+                        .padding(.trailing, AppSpacing.m)
+                        .padding(.bottom, AppSpacing.l)
+                        .transition(.scale.combined(with: .opacity))
+                }
+            }
+        }
+        .animation(.snappy(duration: AppDuration.normal), value: isQuickTaskEntryPresented)
+        .onOpenURL { url in
+            if TaskTrackerDeepLink.isTimer(url) {
+                selectedTab = .timer
+            }
+        }
+        .onChange(of: selectedTab) { _, _ in
+            isQuickTaskEntryPresented = false
+            lastContentTab = selectedTab
+        }
+        .task { await initialLoad() }
+    }
+
     @available(iOS 18, *)
     @ViewBuilder
     private var nativeSearchTabView: some View {
@@ -119,11 +197,7 @@ struct RootTabView: View {
             Tab(value: AppRootTab.addTask, role: .search) {
                 quickTaskSearchContent
             } label: {
-                Label {
-                    Text("Add")
-                } icon: {
-                    AddTaskSymbolIcon(isActive: selectedTab == .addTask)
-                }
+                Label("Add", systemImage: AppSymbols.Navigation.addTask)
             }
             Tab("Settings", systemImage: AppSymbols.Navigation.settings, value: AppRootTab.settings) {
                 settingsTabContent
@@ -182,21 +256,11 @@ struct RootTabView: View {
 
     private var quickTaskSearchContent: some View {
         NavigationStack {
-            List {
-                if quickTaskDraft.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty {
-                    Section {
-                        VStack(spacing: AppSpacing.s) {
-                            AddTaskSymbolIcon(isActive: selectedTab == .addTask)
-                                .font(.largeTitle)
-                                .symbolRenderingMode(.hierarchical)
-                                .foregroundStyle(.secondary)
-
-                            Text("Type a task title, then tap Add to create it.")
-                                .foregroundStyle(.secondary)
-                        }
-                        .frame(maxWidth: .infinity)
-                    }
-                } else if matchingActiveTasks.isEmpty {
+            if quickTaskDraft.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty {
+                AddTaskEmptyState(animationTrigger: addTabAnimationID)
+            } else {
+                List {
+                    if matchingActiveTasks.isEmpty {
                     Section {
                         Button {
                             submitQuickTask(quickTaskDraft)
@@ -204,19 +268,20 @@ struct RootTabView: View {
                             Label("Add \"\(quickTaskDraft)\"", systemImage: AppSymbols.Tasks.add)
                         }
                     }
-                } else {
-                    Section("Existing tasks") {
-                        ForEach(matchingActiveTasks.prefix(8)) { task in
-                            Button {
-                                selectQuickTaskSuggestion(task)
-                            } label: {
-                                Label(task.title, systemImage: AppSymbols.Navigation.taskHub)
+                    } else {
+                        Section("Existing tasks") {
+                            ForEach(matchingActiveTasks.prefix(8)) { task in
+                                Button {
+                                    selectQuickTaskSuggestion(task)
+                                } label: {
+                                    Label(task.title, systemImage: AppSymbols.Navigation.taskHub)
+                                }
                             }
                         }
                     }
                 }
+                .navigationTitle("Add Task")
             }
-            .navigationTitle("Add Task")
         }
         .searchable(text: $quickTaskDraft, prompt: "Add or search task")
         .onSubmit(of: .search) {
@@ -240,7 +305,7 @@ struct RootTabView: View {
                 .shadow(color: .black.opacity(0.18), radius: 18, y: 8)
         }
         .buttonStyle(.plain)
-        .accessibilityLabel("Add Task")
+        .accessibilityLabel(String(localized: "Add Task"))
         .accessibilityIdentifier("root.addTaskButton")
     }
 
@@ -251,7 +316,7 @@ struct RootTabView: View {
                 .onTapGesture { dismissQuickTaskEntry() }
 
             TaskQuickEntryView(
-                placeholder: "Add or search task",
+                placeholder: String(localized: "Add or search task"),
                 draft: $quickTaskDraft,
                 suggestions: matchingActiveTasks,
                 textFieldIdentifier: "root.quickTaskField",
@@ -348,17 +413,86 @@ struct RootTabView: View {
 
 /// Pins the active-timer strip into each tab’s content safe area so it sits *above* the tab bar
 /// (applying `safeAreaInset` to `TabView` itself draws over the tab bar with sidebar-adaptable style).
-private struct AddTaskSymbolIcon: View {
-    let isActive: Bool
+/// Draw-on entrance symbol for the Add/search tab: a plus inside a rounded rectangle that
+/// strokes itself on when the page opens and then stays fully drawn.
+///
+/// This is a path animation rather than `.symbolEffect(.drawOn)` on purpose: the iOS 26
+/// DrawOn symbol effect holds the symbol *undrawn* once a non-repeating run finishes (and
+/// renders nothing at all on the simulator), so the icon vanished right after its animation.
+private struct AddTaskDrawOnIcon: View {
+    let trigger: Int
+    @State private var progress: CGFloat = 0
+    @State private var replayTask: Swift.Task<Void, Never>?
 
     var body: some View {
-        if #available(iOS 26, *) {
-            Image(systemName: AppSymbols.Navigation.addTask)
-                .symbolVariant(.none)
-                .symbolEffect(.drawOn, options: .nonRepeating, isActive: isActive)
-        } else {
-            Image(systemName: AppSymbols.Navigation.addTask)
-                .symbolVariant(.none)
+        plusInRectangle
+            .trim(from: 0, to: progress)
+            .stroke(style: StrokeStyle(lineWidth: 2, lineCap: .round, lineJoin: .round))
+            .foregroundStyle(.secondary)
+            .frame(width: 22, height: 18)
+            .accessibilityHidden(true)
+            .onChange(of: trigger) { _, _ in
+                playAnimation()
+            }
+            .onAppear {
+                playAnimation()
+            }
+    }
+
+    private func playAnimation() {
+        replayTask?.cancel()
+        progress = 0
+        withAnimation(.easeInOut(duration: 0.5)) {
+            progress = 1
         }
+        replayTask = Swift.Task { @MainActor in
+            try? await Swift.Task.sleep(for: .seconds(4))
+            guard !Swift.Task.isCancelled else { return }
+            withAnimation(.easeInOut(duration: 0.5)) {
+                progress = 0
+            }
+            try? await Swift.Task.sleep(for: .seconds(0.15))
+            guard !Swift.Task.isCancelled else { return }
+            withAnimation(.easeInOut(duration: 0.5)) {
+                progress = 1
+            }
+        }
+    }
+
+    /// `plus.rectangle`-matching glyph; rect perimeter first, then the plus, so the trim
+    /// draws the outline before the plus (matching the SF Symbols DrawOn motion).
+    private var plusInRectangle: Path {
+        var path = Path()
+        path.addRoundedRect(
+            in: CGRect(x: 1, y: 1, width: 20, height: 16),
+            cornerSize: CGSize(width: 3, height: 3)
+        )
+        path.move(to: CGPoint(x: 11, y: 5))
+        path.addLine(to: CGPoint(x: 11, y: 13))
+        path.move(to: CGPoint(x: 7, y: 9))
+        path.addLine(to: CGPoint(x: 15, y: 9))
+        return path
+    }
+}
+
+/// Empty state for the Add/search tab. The symbol replays its draw-on motion each time the
+/// page opens and stays visible afterwards. Centered against the full screen:
+/// `.ignoresSafeArea(.keyboard)` stops the auto-opened search keyboard from shrinking the
+/// layout area and pushing the content to the top.
+private struct AddTaskEmptyState: View {
+    let animationTrigger: Int
+
+    var body: some View {
+        VStack(spacing: AppSpacing.s) {
+            AddTaskDrawOnIcon(trigger: animationTrigger)
+
+            Text("Type a task title, then tap Add to create it.")
+                .foregroundStyle(.secondary)
+                .multilineTextAlignment(.center)
+        }
+        .frame(maxWidth: .infinity, maxHeight: .infinity, alignment: .center)
+        .ignoresSafeArea(.keyboard, edges: .bottom)
+        .padding(AppSpacing.xl)
+        .navigationTitle("Add Task")
     }
 }

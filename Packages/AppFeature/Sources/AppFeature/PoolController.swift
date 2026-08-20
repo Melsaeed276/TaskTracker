@@ -12,11 +12,11 @@ public enum PoolShowMode: String, Sendable, CaseIterable, Identifiable {
 
     public var displayName: String {
         switch self {
-        case .today: return "Today"
-        case .allTasks: return "All Tasks"
-        case .scheduled: return "Scheduled"
-        case .archived: return "Archived"
-        case .completed: return "Completed"
+        case .today: return String(localized: "Today")
+        case .allTasks: return String(localized: "All Tasks")
+        case .scheduled: return String(localized: "Scheduled")
+        case .archived: return String(localized: "Archived")
+        case .completed: return String(localized: "Completed")
         }
     }
 }
@@ -31,10 +31,10 @@ public enum PoolSortOrder: String, Sendable, CaseIterable, Identifiable {
 
     public var displayName: String {
         switch self {
-        case .createdNewest: return "Newest first"
-        case .createdOldest: return "Oldest first"
-        case .title: return "Title"
-        case .priority: return "Priority"
+        case .createdNewest: return String(localized: "Newest first")
+        case .createdOldest: return String(localized: "Oldest first")
+        case .title: return String(localized: "Title")
+        case .priority: return String(localized: "Priority")
         }
     }
 }

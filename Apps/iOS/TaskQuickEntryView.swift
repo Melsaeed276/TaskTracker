@@ -49,7 +49,7 @@ struct TaskQuickEntryView: View {
                 }
                 .buttonStyle(.plain)
                 .disabled(draft.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty)
-                .accessibilityLabel("Add Task")
+                .accessibilityLabel(String(localized: "Add Task"))
             }
             .padding(.horizontal, AppSpacing.m)
             .frame(minHeight: 52)
@@ -107,7 +107,7 @@ struct TaskQuickEntryView: View {
                     .contentShape(Rectangle())
                 }
                 .buttonStyle(.plain)
-                .accessibilityLabel("Use existing task \(task.title)")
+                .accessibilityLabel(String(localized: "Use existing task \(task.title)"))
             }
         }
         .padding(.vertical, AppSpacing.s)
@@ -127,3 +127,44 @@ struct TaskQuickEntryView: View {
         onSubmit(title)
     }
 }
+
+#if DEBUG
+#Preview("Quick Entry — Empty") {
+    TaskQuickEntryPreview(draft: "", suggestions: [])
+}
+
+#Preview("Quick Entry — Draft") {
+    TaskQuickEntryPreview(draft: "Renew domain", suggestions: [])
+}
+
+#Preview("Quick Entry — Suggestions") {
+    TaskQuickEntryPreview(
+        draft: "Re",
+        suggestions: Array(PreviewMocks.samplePool.prefix(3)),
+        focusOnAppear: true
+    )
+}
+
+private struct TaskQuickEntryPreview: View {
+    @State var draft: String
+    let suggestions: [Task]
+    var focusOnAppear = false
+
+    var body: some View {
+        ZStack(alignment: .bottom) {
+            Color.secondary.opacity(0.12)
+                .ignoresSafeArea()
+
+            TaskQuickEntryView(
+                placeholder: "Add or search task",
+                draft: $draft,
+                suggestions: suggestions,
+                focusOnAppear: focusOnAppear,
+                onSubmit: { _ in },
+                onSelectSuggestion: { _ in }
+            )
+            .padding(.bottom, AppSpacing.l)
+        }
+    }
+}
+#endif

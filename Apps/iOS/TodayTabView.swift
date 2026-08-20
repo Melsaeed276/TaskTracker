@@ -138,7 +138,7 @@ private struct TodayTaskRow: View {
                 TaskCompletionMark(isCompleted: task.isCompleted, tint: .accentColor)
             }
             .buttonStyle(.borderless)
-            .accessibilityLabel(task.isCompleted ? "Completed" : "Mark done")
+            .accessibilityLabel(task.isCompleted ? String(localized: "Completed") : String(localized: "Mark done"))
 
             VStack(alignment: .leading, spacing: AppSpacing.xs) {
                 Text(task.title)
@@ -168,7 +168,7 @@ private struct TodayTaskRow: View {
             } label: {
                 Image(systemName: AppSymbols.Tasks.complete)
             }
-            .accessibilityLabel("Done")
+            .accessibilityLabel(String(localized: "Done"))
             .tint(.green)
         }
         .swipeActions(edge: .trailing, allowsFullSwipe: true) {

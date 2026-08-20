@@ -1,8 +1,10 @@
 import SwiftUI
+import UIKit
 import AppDesign
 import UserNotifications
 
 struct SettingsTabView: View {
+    @AppStorage(AppearancePreference.storageKey) private var appearance: AppearancePreference = .auto
     @State private var authorizationStatus: UNAuthorizationStatus = .notDetermined
 
     var body: some View {
@@ -15,6 +17,33 @@ struct SettingsTabView: View {
                     LabeledContent("Version") {
                         Text(versionString)
                     }
+                }
+
+                Button {
+                    if let url = URL(string: UIApplication.openSettingsURLString) {
+                        UIApplication.shared.open(url)
+                    }
+                } label: {
+                    HStack {
+                        Text("Language")
+                        Spacer()
+                        Text("Change Language…")
+                            .foregroundStyle(.secondary)
+                        Image(systemName: "chevron.right")
+                            .foregroundStyle(.secondary)
+                            .font(.caption)
+                    }
+                }
+                .accessibilityIdentifier("settings.openLanguage")
+
+                Section("Appearance") {
+                    Picker("Theme", selection: $appearance) {
+                        ForEach(AppearancePreference.allCases, id: \.self) { preference in
+                            Text(preference.label).tag(preference)
+                        }
+                    }
+                    .pickerStyle(.segmented)
+                    .accessibilityIdentifier("settings.appearancePicker")
                 }
 
                 Section("Notifications") {
@@ -44,13 +73,13 @@ struct SettingsTabView: View {
     private var statusLabel: String {
         switch authorizationStatus {
         case .authorized, .provisional, .ephemeral:
-            return "Allowed"
+            return String(localized: "Allowed")
         case .denied:
-            return "Denied"
+            return String(localized: "Denied")
         case .notDetermined:
-            return "Not requested"
+            return String(localized: "Not requested")
         @unknown default:
-            return "Unknown"
+            return String(localized: "Unknown")
         }
     }
 

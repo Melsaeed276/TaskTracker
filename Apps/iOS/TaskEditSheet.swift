@@ -89,7 +89,7 @@ struct TaskEditSheet: View {
                         TimelineView(.periodic(from: TimerUI.timelineAnchor, by: 1)) { context in
                             TaskTimerActionBar(
                                 countdown: timer.compactLabel(at: context.date) ?? "0:00",
-                                statusText: timer.isPaused ? "Paused" : "Running",
+                                statusText: timer.isPaused ? String(localized: "Paused") : String(localized: "Running"),
                                 isPaused: timer.isPaused,
                                 onPauseResume: {
                                     Swift.Task { @MainActor in
@@ -175,7 +175,7 @@ struct TaskEditSheet: View {
                             }
                         } label: {
                             Label(
-                                timer.isActive ? "Replace Timer for Task" : "Start Timer for Task",
+                                timer.isActive ? String(localized: "Replace Timer for Task") : String(localized: "Start Timer for Task"),
                                 systemImage: AppSymbols.Timer.resume
                             )
                         }
@@ -184,8 +184,8 @@ struct TaskEditSheet: View {
                         if timer.isActive {
                             Text(
                                 timer.isPaused
-                                    ? "A focus session is paused. Resume it from the Timer tab to continue, or replace it here. Stop ends it permanently."
-                                    : "A focus session is running. Use Pause/Resume on the Timer tab to continue later. Starting here replaces it."
+                                    ? String(localized: "A focus session is paused. Resume it from the Timer tab to continue, or replace it here. Stop ends it permanently.")
+                                    : String(localized: "A focus session is running. Use Pause/Resume on the Timer tab to continue later. Starting here replaces it.")
                             )
                             .font(.footnote)
                             .foregroundStyle(.secondary)
@@ -214,19 +214,19 @@ struct TaskEditSheet: View {
             .navigationBarTitleDisplayMode(.inline)
             .navigationSurface()
             .confirmationDialog(
-                "Delete this task?",
+                String(localized: "Delete this task?"),
                 isPresented: $isConfirmingDelete,
                 titleVisibility: .visible
             ) {
-                Button("Delete Task", role: .destructive) {
+                Button(String(localized: "Delete Task"), role: .destructive) {
                     Swift.Task {
                         await onDelete?()
                         dismiss()
                     }
                 }
-                Button("Cancel", role: .cancel) {}
+                Button(String(localized: "Cancel"), role: .cancel) {}
             } message: {
-                Text("This removes the task permanently. Timer history for it is kept in the event log.")
+                Text(String(localized: "This removes the task permanently. Timer history for it is kept in the event log."))
             }
             .sheet(isPresented: $isAddingTime) {
                 addTimeSheet
@@ -287,9 +287,9 @@ struct TaskEditSheet: View {
             }
             .accessibilityIdentifier("taskEdit.addTimeButton")
         } header: {
-            Text("Time Spent")
+            Text(String(localized: "Time Spent"))
         } footer: {
-            Text("Focus sessions are immutable. Add, edit, or remove manual adjustments; hide a session from this total without deleting the timer log.")
+            Text(String(localized: "Focus sessions are immutable. Add, edit, or remove manual adjustments; hide a session from this total without deleting the timer log."))
         }
     }
 
@@ -303,7 +303,7 @@ struct TaskEditSheet: View {
                         .font(.subheadline.weight(.semibold))
                         .strikethrough(entry.isExcluded)
                 case .adjustment:
-                    Text(entry.note?.isEmpty == false ? entry.note! : "Manual time")
+                    Text(entry.note?.isEmpty == false ? entry.note! : String(localized: "Manual time"))
                         .font(.subheadline.weight(.semibold))
                 }
                 Text(entry.occurredAt, style: .date)

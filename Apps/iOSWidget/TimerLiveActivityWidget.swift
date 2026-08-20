@@ -30,7 +30,7 @@ struct TimerLiveActivityWidget: Widget {
                 DynamicIslandExpandedRegion(.bottom) {
                     // Expanded Island uses Link; compact/minimal/lock use widgetURL.
                     Link(destination: TaskTrackerDeepLink.timer) {
-                        Text(context.state.isPaused ? "Paused · Open Timer" : "Running · Open Timer")
+                        Text(context.state.isPaused ? String(localized: "Paused · Open Timer") : String(localized: "Running · Open Timer"))
                             .font(.caption)
                             .foregroundStyle(.secondary)
                             .frame(maxWidth: .infinity, alignment: .leading)
@@ -55,7 +55,7 @@ struct TimerLiveActivityWidget: Widget {
             VStack(alignment: .leading, spacing: 4) {
                 Text(context.attributes.title)
                     .font(.headline)
-                Text(context.state.isPaused ? "Paused" : "Focus timer")
+                Text(context.state.isPaused ? String(localized: "Paused") : String(localized: "Focus timer"))
                     .font(.caption)
                     .foregroundStyle(.secondary)
             }

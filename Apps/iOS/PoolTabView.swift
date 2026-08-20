@@ -33,10 +33,13 @@ struct PoolTabView: View {
                         Section {
                             ForEach(pool.visibleTasks) { task in
                                 poolRow(task)
+                                    .listRowBackground(Color(.systemBackground))
                             }
                         }
                     }
                     .listStyle(.insetGrouped)
+                    .scrollContentBackground(.hidden)
+                    .background(Color(.systemBackground))
 
                     if pool.visibleTasks.isEmpty {
                         PoolEmptyState(showMode: pool.showMode)
@@ -44,41 +47,44 @@ struct PoolTabView: View {
                 }
             }
             .navigationTitle("Pool")
-            .sheet(item: $editingTask, onDismiss: { presentedTaskID = nil }) { task in
-                TaskEditSheet(
-                    task: task,
-                    timer: timer,
-                    makeTimeLog: makeTimeLog,
-                    onSave: { values in
-                        let notes = values.notes.trimmingCharacters(in: .whitespacesAndNewlines)
-                        await pool.edit(
-                            task,
-                            title: values.title,
-                            notes: notes.isEmpty ? nil : notes,
-                            scheduledDay: values.scheduledDay,
-                            priority: values.priority,
-                            applyScheduleAndPriority: true
-                        )
-                        await today.reload()
-                    },
-                    onDelete: {
-                        await pool.delete(task)
-                        await today.reload()
-                    },
-                    onStartedTimer: onStartedTimer,
-                    onOpenTimerTab: onOpenTimerTab
-                )
-            }
-            .task { await pool.reload() }
-            .onChange(of: editingTask) { _, task in
-                presentedTaskID = task?.id
-            }
-            .onChange(of: taskIDToPresent) { _, id in
-                presentTaskIfNeeded(id)
-            }
-            .onChange(of: pool.tasks) { _, _ in
-                presentTaskIfNeeded(taskIDToPresent)
-            }
+        }
+        .background(Color(.systemGroupedBackground))
+        .ignoresSafeArea()
+        .navigationTitle("Pool")
+        .sheet(item: $editingTask, onDismiss: { presentedTaskID = nil }) { task in
+            TaskEditSheet(
+                task: task,
+                timer: timer,
+                makeTimeLog: makeTimeLog,
+                onSave: { values in
+                    let notes = values.notes.trimmingCharacters(in: .whitespacesAndNewlines)
+                    await pool.edit(
+                        task,
+                        title: values.title,
+                        notes: notes.isEmpty ? nil : notes,
+                        scheduledDay: values.scheduledDay,
+                        priority: values.priority,
+                        applyScheduleAndPriority: true
+                    )
+                    await today.reload()
+                },
+                onDelete: {
+                    await pool.delete(task)
+                    await today.reload()
+                },
+                onStartedTimer: onStartedTimer,
+                onOpenTimerTab: onOpenTimerTab
+            )
+        }
+        .task { await pool.reload() }
+        .onChange(of: editingTask) { _, task in
+            presentedTaskID = task?.id
+        }
+        .onChange(of: taskIDToPresent) { _, id in
+            presentTaskIfNeeded(id)
+        }
+        .onChange(of: pool.tasks) { _, _ in
+            presentTaskIfNeeded(taskIDToPresent)
         }
     }
 
@@ -99,7 +105,7 @@ struct PoolTabView: View {
                 TaskCompletionMark(isCompleted: task.isCompleted, tint: .accentColor)
             }
             .buttonStyle(.borderless)
-            .accessibilityLabel(task.isCompleted ? "Mark incomplete" : "Mark done")
+            .accessibilityLabel(task.isCompleted ? String(localized: "Mark incomplete") : String(localized: "Mark done"))
 
             VStack(alignment: .leading, spacing: AppSpacing.xs) {
                 HStack(spacing: AppSpacing.xs) {
@@ -137,7 +143,7 @@ struct PoolTabView: View {
                         .foregroundStyle(Color.accentColor)
                 }
                 .buttonStyle(.borderless)
-                .accessibilityLabel("Add to Today")
+                .accessibilityLabel(String(localized: "Add to Today"))
             }
         }
         .padding(.vertical, AppSpacing.xs)
@@ -153,7 +159,7 @@ struct PoolTabView: View {
                 } label: {
                     Image(systemName: AppSymbols.Tasks.complete)
                 }
-                .accessibilityLabel("Done")
+                .accessibilityLabel(String(localized: "Done"))
                 .tint(.green)
             }
         }
@@ -294,7 +300,7 @@ private struct PoolControlPanel: View {
             .accessibilityIdentifier("pool.sortMenu")
         }
         .padding(AppSpacing.m)
-        .background(.regularMaterial, in: RoundedRectangle(cornerRadius: 20, style: .continuous))
+        .background(.background, in: RoundedRectangle(cornerRadius: 20, style: .continuous))
         .overlay {
             RoundedRectangle(cornerRadius: 20, style: .continuous)
                 .strokeBorder(.secondary.opacity(0.12), lineWidth: 1)
@@ -347,8 +353,8 @@ private struct PoolCategoryCard: View {
             }
         }
         .buttonStyle(.plain)
-        .accessibilityLabel("Show \(mode.displayName)")
-        .accessibilityValue("\(count) tasks")
+        .accessibilityLabel(String(localized: "Show \(mode.displayName)"))
+        .accessibilityValue(String(localized: "\(count) tasks"))
     }
 }
 
@@ -357,26 +363,26 @@ private struct PoolEmptyState: View {
 
     private var title: String {
         switch showMode {
-        case .today: return "Nothing in Today"
-        case .allTasks: return "Pool is empty"
-        case .scheduled: return "No scheduled tasks"
-        case .archived: return "No archived tasks"
-        case .completed: return "No completed tasks"
+        case .today: return String(localized: "Nothing in Today")
+        case .allTasks: return String(localized: "Pool is empty")
+        case .scheduled: return String(localized: "No scheduled tasks")
+        case .archived: return String(localized: "No archived tasks")
+        case .completed: return String(localized: "No completed tasks")
         }
     }
 
     private var message: String {
         switch showMode {
         case .today:
-            return "Tasks scheduled for today will appear here."
+            return String(localized: "Tasks scheduled for today will appear here.")
         case .allTasks:
-            return "Add a task when something comes to mind. Active tasks, including Today tasks, will live here."
+            return String(localized: "Add a task when something comes to mind. Active tasks, including Today tasks, will live here.")
         case .scheduled:
-            return "Tasks with a scheduled day will appear here."
+            return String(localized: "Tasks with a scheduled day will appear here.")
         case .archived:
-            return "Archived tasks will appear here. In this version, archive uses the completed task state."
+            return String(localized: "Archived tasks will appear here. In this version, archive uses the completed task state.")
         case .completed:
-            return "Tasks you finish will appear here."
+            return String(localized: "Tasks you finish will appear here.")
         }
     }
 
@@ -440,3 +446,4 @@ private struct PoolEmptyState: View {
     .task { await pool.reload() }
 }
 #endif
+

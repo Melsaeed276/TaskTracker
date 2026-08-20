@@ -657,3 +657,15 @@ relatedTaskID:)`. Active linked sessions show the task inside the timer face; pa
 the existing Resume flow for the remaining time. Bottom controls remain in a safe-area panel near the tab
 bar. Verified: iOS Debug build succeeds after the change; macOS/watchOS builds and AppFeature/AppDesign
 package tests passed before this cleanup in the same iteration.
+2026-08-18 — Search/Add tab empty state fix: replaced native `.symbolEffect(.drawOn)` with custom
+`AddTaskDrawOnIcon` (SwiftUI Path + `.trim(from:to:)` stroke animation, 0.7s easeInOut) because
+the native drawOn holds the symbol undrawn after nonRepeating completion and renders nothing on the
+iOS simulator at all (confirmed by probe app). Extracted `AddTaskEmptyState` view with centered layout.
+Added `.ignoresSafeArea(.keyboard, edges: .bottom)` so the keyboard doesn't push content upward.
+Tab bar label now uses static `Label("Add", systemImage:)` to avoid drawOn hiding unselected tab icons.
+Verified: icon visible and centered on simulator after animation, all three app builds succeed. Also
+fixed a pre-existing `Task.isInPool` bug (was `completedAt == nil`, now correctly
+`scheduledDay == nil && completedAt == nil` per `AGENTS.md` contract), which fixed a failing
+`TaskDomain` test. Updated stale `AppDesignTests` symbol expectations to match current
+`AppSymbols.Navigation` values (calendar.badge.plus / rectangle.stack.badge.plus). All 30 package
+tests pass.

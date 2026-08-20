@@ -13,38 +13,54 @@ struct PoolTabView: View {
     var onStartedTimer: (() -> Void)? = nil
     var onOpenTimerTab: (() -> Void)? = nil
     @State private var editingTask: Task?
+    @State private var scrollOffset: CGFloat = 0
+
+    private var headerProgress: CGFloat {
+        min(max(scrollOffset / 100, 0), 1)
+    }
 
     var body: some View {
         NavigationStack {
-            VStack(spacing: 0) {
+            ScrollView {
+                GeometryReader { geo in
+                    Color.clear
+                        .preference(
+                            key: ScrollOffsetKey.self,
+                            value: geo.frame(in: .named("poolScroll")).minY
+                        )
+                }
+                .frame(height: 0)
+
                 PoolControlPanel(
                     showMode: $pool.showMode,
                     sortOrder: $pool.sortOrder,
                     count: { pool.count(for: $0) },
                     onShowModeChanged: {
                         Swift.Task { await pool.reload() }
-                    }
+                    },
+                    progress: headerProgress
                 )
                 .padding(.horizontal, AppSpacing.m)
                 .padding(.top, AppSpacing.s)
+                .animation(.easeInOut(duration: 0.15), value: headerProgress)
 
                 ZStack {
-                    List {
-                        Section {
-                            ForEach(pool.visibleTasks) { task in
-                                poolRow(task)
-                                    .listRowBackground(Color(.systemBackground))
-                            }
+                    LazyVStack(spacing: 0) {
+                        ForEach(pool.visibleTasks) { task in
+                            poolRow(task)
                         }
                     }
-                    .listStyle(.insetGrouped)
-                    .scrollContentBackground(.hidden)
-                    .background(Color(.systemBackground))
+                    .padding(.top, AppSpacing.xs)
 
                     if pool.visibleTasks.isEmpty {
                         PoolEmptyState(showMode: pool.showMode)
                     }
                 }
+            }
+            .scrollIndicators(.hidden)
+            .coordinateSpace(name: "poolScroll")
+            .onPreferenceChange(ScrollOffsetKey.self) { value in
+                scrollOffset = max(-value, 0)
             }
             .navigationTitle("Pool")
         }
@@ -147,8 +163,11 @@ struct PoolTabView: View {
             }
         }
         .padding(.vertical, AppSpacing.xs)
+        .padding(.horizontal, AppSpacing.m)
         .contentShape(Rectangle())
         .onTapGesture { editingTask = task }
+        .background(Color(.systemBackground))
+        .clipShape(RoundedRectangle(cornerRadius: 10, style: .continuous))
         .swipeActions(edge: .leading, allowsFullSwipe: !task.isCompleted) {
             if !task.isCompleted {
                 Button {
@@ -248,15 +267,17 @@ private struct PoolControlPanel: View {
     @Binding var sortOrder: PoolSortOrder
     let count: (PoolShowMode) -> Int
     let onShowModeChanged: () -> Void
+    let progress: CGFloat
 
     var body: some View {
-        VStack(alignment: .leading, spacing: AppSpacing.m) {
-            LazyVGrid(columns: [GridItem(.flexible()), GridItem(.flexible())], spacing: AppSpacing.s) {
+        VStack(alignment: .leading, spacing: AppSpacing.m - progress * 4) {
+            LazyVGrid(columns: [GridItem(.flexible()), GridItem(.flexible())], spacing: AppSpacing.s - progress * 3) {
                 ForEach(PoolShowMode.allCases) { mode in
                     PoolCategoryCard(
                         mode: mode,
                         count: count(mode),
-                        isSelected: showMode == mode
+                        isSelected: showMode == mode,
+                        progress: progress
                     ) {
                         showMode = mode
                         onShowModeChanged()
@@ -299,7 +320,7 @@ private struct PoolControlPanel: View {
             .buttonStyle(.plain)
             .accessibilityIdentifier("pool.sortMenu")
         }
-        .padding(AppSpacing.m)
+        .padding(AppSpacing.m - progress * 6)
         .background(.background, in: RoundedRectangle(cornerRadius: 20, style: .continuous))
         .overlay {
             RoundedRectangle(cornerRadius: 20, style: .continuous)
@@ -312,6 +333,7 @@ private struct PoolCategoryCard: View {
     let mode: PoolShowMode
     let count: Int
     let isSelected: Bool
+    let progress: CGFloat
     let action: () -> Void
 
     private var symbolName: String {
@@ -326,23 +348,24 @@ private struct PoolCategoryCard: View {
 
     var body: some View {
         Button(action: action) {
-            VStack(alignment: .leading, spacing: AppSpacing.s) {
+            VStack(alignment: .leading, spacing: AppSpacing.s - progress * 3) {
                 HStack {
                     Image(systemName: symbolName)
-                        .font(.title3.weight(.semibold))
+                        .font(.system(size: 20 - progress * 5, weight: .semibold))
                         .symbolRenderingMode(.hierarchical)
                     Spacer()
                     Text("\(count)")
-                        .font(.headline.monospacedDigit())
+                        .font(.system(size: 17 - progress * 3, weight: .semibold).monospacedDigit())
                 }
 
                 Text(mode.displayName)
-                    .font(.subheadline.weight(.semibold))
+                    .font(.system(size: 14 - progress * 2, weight: .semibold))
                     .lineLimit(1)
             }
             .foregroundStyle(isSelected ? Color.accentColor : Color.primary)
-            .padding(AppSpacing.m)
+            .padding(AppSpacing.m - progress * 6)
             .frame(maxWidth: .infinity, alignment: .leading)
+            .frame(minHeight: 44 - progress * 10)
             .background(
                 isSelected ? Color.accentColor.opacity(0.14) : Color.secondary.opacity(0.08),
                 in: RoundedRectangle(cornerRadius: 18, style: .continuous)
@@ -406,6 +429,13 @@ private struct PoolEmptyState: View {
         }
         .padding(AppSpacing.xl)
         .frame(maxWidth: .infinity, maxHeight: .infinity)
+    }
+}
+
+private struct ScrollOffsetKey: PreferenceKey {
+    nonisolated(unsafe) static var defaultValue: CGFloat = 0
+    static func reduce(value: inout CGFloat, nextValue: () -> CGFloat) {
+        value = nextValue()
     }
 }
 

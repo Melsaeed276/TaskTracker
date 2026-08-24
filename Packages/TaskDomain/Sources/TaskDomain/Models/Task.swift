@@ -33,3 +33,5 @@ public struct Task: Sendable, Hashable, Codable, Identifiable {
     public var isCompleted: Bool { completedAt != nil }
     public var isInPool: Bool { scheduledDay == nil && completedAt == nil }
 }
+
+// TODO: 1- Add alert and reminder

@@ -62,7 +62,7 @@ struct PoolTabView: View {
                 scrollOffset = max(-value, 0)
             }
             .navigationTitle("Pool")
-            .navigationBarTitleDisplayMode(.inline)
+           // .navigationBarTitleDisplayMode(.inline)
         }
         .background(Color(.systemGroupedBackground))
         .ignoresSafeArea()

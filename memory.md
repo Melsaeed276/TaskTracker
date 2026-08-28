@@ -77,6 +77,90 @@ Still outstanding:
 
 # Active Work
 
+**2026-08-24 — Today row custom swipe actions + configurable row inputs (iOS).** `TodayTaskRow`
+is now fully configurable through its initializer: `onTap`, `onLongTap`, `onComplete`,
+`ltrSwipe`/`rtlSwipe` (`TodayRowSwipeAction`: symbol + label + tint + async handler),
+and an optional inline trailing `inlineAction`. Every parameter defaults — omitting one yields
+the standard behavior (tap = open editor, leading swipe = context-aware Done/Not-done full-swipe,
+trailing = Remove-from-Today full-swipe). Swipe actions are plain-value structs, deliberately NOT
+stored `Button` views or `UIImage` (owner's draft direction kept: tap/RTL/LTR/long-press/
+complete/inline-action slots; storage form corrected to closures + values per the "components
+take plain values" rule; a stored `Button` can't carry tint/accessibility wiring). Long press and
+tap share one `.gesture(LongPress…exclusively(before: Tap))` so holding suppresses the tap.
+Leading-edge Edit button replaced by tap-to-edit. Both new SF Symbols (`edit`, `removeFromToday`)
+added to `AppSymbols.Tasks`; the `"calendar.badge.minus"` literal is gone. Liquid Glass on rows
+was requested but rejected — `docs/DESIGN_SYSTEM.md` bans glass on list content; user confirmed
+respecting the doc. Six `TodayTaskRow` previews added via a `TodayRowPreviewScaffold` (rows in a
+real List — swipeActions need one — with a monospaced footer echoing which callback fired):
+defaults incomplete+completed, custom LTR/RTL swipes, inline trailing action, tap-vs-long-press,
+long-content clamp, fully customized, and very-large-title (default + `.accessibility1` Dynamic
+Type). The inline trailing action gained `AppSpacing.s` trailing padding so it no longer touches
+the row's end. Verified: all three schemes build zero-warning,
+AppFeature 53 tests pass.
+
+**2026-08-24 — TaskRow extracted to AppDesign (plan taskrow-extraction Tasks 1 + 3 done).**
+The row moved out of `Apps/iOS/TodayTabView.swift` into
+`Packages/AppDesign/Sources/AppDesign/TaskRow.swift` as a public plain-values component:
+`TaskRow(title:notes:priorityLabel:isCompleted:leading:trailing:onPress:)` with nested
+`LeadingAction(isOn:tint:action:)` / `TrailingAction(icon:tint:accessibilityLabel:action:)`
+structs; callers attach `.swipeActions` externally. The private `TodayTaskRow`,
+`TodayRowInlineAction`, and all row previews were deleted from TodayTabView; the app-side glue
+(`TodayRowSwipeAction` with `standardCompletion(task:today:onFinish:)` — `onFinish` restores the
+post-completion `pool.reload()` — and `standardRemoveFromToday`) plus a private `swipeButton`
+helper stay in the iOS file. Priority capsule badge support added. Preview scaffold ported as
+DEBUG-only `TaskRowPreviewScaffold`; two cross-platform fixes were needed because AppDesign
+builds for every target: `.listStyle(.insetGrouped)` is unavailable on macOS (dropped) and
+`.background(.bar)` on watchOS (now `.quaternary`). Plan acceptance boxes ticked for Tasks 1
+and 3; Tasks 2 (PoolPreferences), 4 (PoolTabView), and 5 (SettingsTabView) remain open.
+Verified: AppDesign package builds clean and its 10 tests pass, iOS/macOS/watchOS schemes build
+zero-warning (only pre-existing LanguageBundle Sendable warning + toolchain noise),
+AppFeature 53 tests pass. Not verified in this session: visual canvas inspection of previews.
+
+Completion animation added to `TaskCompletionMark` (TimerControls.swift) so every row inherits
+it. First attempt used conditional insertion plus a `@State pulse`, but the pulse often started in
+its final state and appeared static. Corrected implementation keeps the fill and checkmark in the
+view tree and animates `opacity` + `scaleEffect` directly from `isCompleted` with a spring
+(`response 0.28 / damping 0.52`), so completion and un-completion both interpolate reliably. Title
+strikethrough/fade in `TaskRow` animates over 0.2 s. All three schemes rebuilt zero-warning;
+AppDesign 10 tests pass.
+
+Temporary DEBUG-only `TaskRow` animation logs added for diagnosis: tapping the leading completion
+button prints `[TaskRow animation] completion button pressed; currentVisualState=...`, and any
+`completionVisualState` change prints `completion visual state changed old -> new`. Logs avoid task
+titles/content to prevent accidental PII in console output. AppDesign 10 tests and all three app
+scheme builds pass after adding the logs.
+
+Runtime log showed only `completion button pressed` and no state-change log, proving the row tap
+arrived but the stateless row was waiting on the async controller/model update; inside `List`, that
+can redraw straight to the completed value with no visible interpolation. `TaskRow` now owns a local
+`@State displayedCompletionState`: on leading-button press it optimistically toggles the visual state
+inside `withAnimation`, logs the local visual set, then runs the caller action; `onChange` of the
+external completion value syncs swipes/controller updates back into the local state with the same
+spring. This should make both tap-to-complete and LTR swipe completion visibly animate when the row
+remains on screen.
+
+Follow-up logs showed `TaskRow` did set local state, but Today completion removes the row from the
+filtered list before the animation can be seen. `TodayTabView` now owns `completingTaskIDs`, passes
+`task.isCompleted || completingTaskIDs.contains(task.id)` into `TaskRow`, and delays `today.complete`
+until after the row animation window. Swipe completion uses the same path via
+`completionSwipeAction(for:isShowingCompleted:)`. `TaskCompletionMark` now has an `animationToken`
+that drives a visible expanding burst ring; `TaskRow` exposes its animation phase through the
+completion button accessibility value (`incomplete`, `animating-to-completed`, etc.) for tests.
+Added iOS UI test `testTodayCompletionButtonStartsCompletionAnimation`, which creates a Today task,
+taps `taskRow.completionButton`, asserts `animating-to-completed`, then waits for the row to leave
+Today. Xcode project regenerated from `project.yml` so UI tests are in the scheme. Verified targeted
+iOS UI test passes, AppDesign 10 tests pass, AppFeature 53 tests pass, and iOS/macOS/watchOS builds
+are warning-free after fixing the `withAnimation`/`Set.insert` warning.
+
+Console-log follow-up: the CloudKit `CKAccountStatusNoAccount` lines are documented expected
+behaviour for a simulator not signed into iCloud (`docs/ICLOUD_SYNC.md` §Simulator / no iCloud
+account), so no sync-architecture change was made. The `Invalid frame dimension (negative or
+non-finite)` source was `Apps/iOS/PoolTabView.swift`, where `PoolControlPanel` computed
+`.frame(height: (1 - progress) * .infinity)`. Fixed by measuring the expanded header's finite
+intrinsic height with `PoolControlPanelExpandedHeightKey` and animating `measuredHeight *
+(1 - progress)` instead. Latest targeted animation UI test output contained no `Invalid frame`
+lines; AppDesign 10 tests, AppFeature 53 tests, and iOS/macOS/watchOS builds pass.
+
 **2026-08-18 — Pool improvements branch.** Branch `feature/pool-improvements` redesigns the iOS Pool
 screen around Reminders-style category cards: Today, All Tasks, Scheduled, Archived, and Completed. The
 controller now loads one all-task snapshot and filters `visibleTasks` by selected card, with counts per

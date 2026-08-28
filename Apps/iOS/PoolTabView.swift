@@ -267,18 +267,35 @@ private struct PoolControlPanel: View {
     let count: (PoolShowMode) -> Int
     let onShowModeChanged: () -> Void
     let progress: CGFloat
+    @State private var expandedHeight: CGFloat = 0
 
     var body: some View {
         VStack(spacing: 0) {
             expandedView
+                .background {
+                    GeometryReader { proxy in
+                        Color.clear.preference(
+                            key: PoolControlPanelExpandedHeightKey.self,
+                            value: proxy.size.height
+                        )
+                    }
+                }
                 .opacity(1 - progress)
-                .frame(height: (1 - progress) * .infinity, alignment: .top)
+                .frame(height: measuredExpandedHeight * (1 - progress), alignment: .top)
                 .clipped()
 
             collapsedView
                 .opacity(progress)
         }
         .animation(.easeInOut(duration: 0.15), value: progress)
+        .onPreferenceChange(PoolControlPanelExpandedHeightKey.self) { height in
+            guard height.isFinite, height > 0 else { return }
+            expandedHeight = height
+        }
+    }
+
+    private var measuredExpandedHeight: CGFloat {
+        expandedHeight > 0 ? expandedHeight : 1
     }
 
     @ViewBuilder
@@ -517,6 +534,13 @@ private struct ScrollOffsetKey: PreferenceKey {
     }
 }
 
+private struct PoolControlPanelExpandedHeightKey: PreferenceKey {
+    nonisolated(unsafe) static var defaultValue: CGFloat = 0
+    static func reduce(value: inout CGFloat, nextValue: () -> CGFloat) {
+        value = max(value, nextValue())
+    }
+}
+
 #if DEBUG
 #Preview("Pool — All Tasks") {
     let pool = PreviewMocks.pool()
@@ -554,4 +578,3 @@ private struct ScrollOffsetKey: PreferenceKey {
     .task { await pool.reload() }
 }
 #endif
-

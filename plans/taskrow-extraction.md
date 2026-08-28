@@ -43,8 +43,8 @@ Layout matches existing rows: `HStack { [leading button] [VStack(title, notes)] 
 - Caller applies `.swipeActions`, `.contextMenu`, `.onTapGesture` externally
 
 **Acceptance:**
-- [ ] TaskRow compiles in AppDesign package
-- [ ] Visual output matches TodayTaskRow when given same inputs
+- [x] TaskRow compiles in AppDesign package
+- [x] Visual output matches TodayTaskRow when given same inputs
 
 ---
 
@@ -85,8 +85,8 @@ Replace `TodayTaskRow` private struct with `TaskRow` usage:
 - Delete the private `TodayTaskRow` struct
 
 **Acceptance:**
-- [ ] Today tab visually identical
-- [ ] All swipe actions and context menu still work
+- [x] Today tab visually identical
+- [x] All swipe actions and context menu still work
 
 ---
 

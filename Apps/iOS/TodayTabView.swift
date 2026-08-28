@@ -15,18 +15,39 @@ struct TodayTabView: View {
     var onOpenTimerTab: (() -> Void)? = nil
     var onOpenPoolTab: (() -> Void)? = nil
     @State private var editingTask: Task?
+    @State private var completingTaskIDs = Set<UUID>()
 
     var body: some View {
         NavigationStack {
             List {
                 Section {
                     ForEach(today.tasks) { task in
-                        TodayTaskRow(
-                            task: task,
-                            today: today,
-                            onComplete: { await pool.reload() },
-                            onEdit: { editingTask = task }
+                        let isShowingCompleted = task.isCompleted || completingTaskIDs.contains(task.id)
+                        TaskRow(
+                            title: task.title,
+                            notes: task.notes,
+                            isCompleted: isShowingCompleted,
+                            leading: TaskRow.LeadingAction(
+                                isOn: isShowingCompleted,
+                                tint: .accentColor
+                            ) {
+                                Swift.Task {
+                                    if task.isCompleted {
+                                        await today.uncomplete(task)
+                                    } else {
+                                        await completeWithRowAnimation(task)
+                                    }
+                                }
+                            },
+                            onPress: { editingTask = task },
+                            completionAnimationPhaseDurationNanoseconds: completionAnimationDurationNanoseconds
                         )
+                        .swipeActions(edge: .leading, allowsFullSwipe: true) {
+                            swipeButton(completionSwipeAction(for: task, isShowingCompleted: isShowingCompleted))
+                        }
+                        .swipeActions(edge: .trailing, allowsFullSwipe: true) {
+                            swipeButton(.standardRemoveFromToday(task: task, today: today))
+                        }
                     }
                 }
             }
@@ -83,6 +104,50 @@ struct TodayTabView: View {
         taskIDToPresent = nil
     }
 
+    @MainActor
+    private func completeWithRowAnimation(_ task: Task) async {
+        guard !completingTaskIDs.contains(task.id) else { return }
+        withAnimation(.spring(response: 0.28, dampingFraction: 0.52)) {
+            _ = completingTaskIDs.insert(task.id)
+        }
+
+        // Let TaskRow's checkmark/burst animation play before the Today query removes
+        // the completed task from this filtered list.
+        try? await Swift.Task.sleep(nanoseconds: completionAnimationDurationNanoseconds)
+
+        await today.complete(task)
+        await pool.reload()
+        completingTaskIDs.remove(task.id)
+    }
+
+    private func completionSwipeAction(for task: Task, isShowingCompleted: Bool) -> TodayRowSwipeAction {
+        TodayRowSwipeAction(
+            systemImage: isShowingCompleted ? AppSymbols.Tasks.incomplete : AppSymbols.Tasks.complete,
+            accessibilityLabel: isShowingCompleted ? String(localized: "Mark not done") : String(localized: "Done"),
+            tint: .green
+        ) {
+            if task.isCompleted {
+                await today.uncomplete(task)
+            } else {
+                await completeWithRowAnimation(task)
+            }
+        }
+    }
+
+    private var completionAnimationDurationNanoseconds: UInt64 {
+        ProcessInfo.processInfo.arguments.contains("--ui-testing") ? 1_600_000_000 : 700_000_000
+    }
+
+    private func swipeButton(_ action: TodayRowSwipeAction) -> some View {
+        Button {
+            Swift.Task { await action.perform() }
+        } label: {
+            Image(systemName: action.systemImage)
+        }
+        .accessibilityLabel(action.accessibilityLabel)
+        .tint(action.tint)
+    }
+
 }
 
 private struct TodayEmptyState: View {
@@ -121,69 +186,62 @@ private struct TodayEmptyState: View {
     }
 }
 
-private struct TodayTaskRow: View {
-    let task: Task
-    let today: TodayController
-    let onComplete: () async -> Void
-    let onEdit: () -> Void
+/// One revealed swipe action on a Today row, described as plain values so the row
+/// controls styling, tint, and accessibility.
+private struct TodayRowSwipeAction {
+    let systemImage: String
+    let accessibilityLabel: String
+    /// Nil inherits the accent color.
+    let tint: Color?
+    let perform: () async -> Void
 
-    var body: some View {
-        HStack(alignment: .top, spacing: AppSpacing.s) {
-            Button {
-                Swift.Task {
-                    await today.complete(task)
-                    await onComplete()
-                }
-            } label: {
-                TaskCompletionMark(isCompleted: task.isCompleted, tint: .accentColor)
+    init(
+        systemImage: String,
+        accessibilityLabel: String,
+        tint: Color? = nil,
+        perform: @escaping () async -> Void
+    ) {
+        self.systemImage = systemImage
+        self.accessibilityLabel = accessibilityLabel
+        self.tint = tint
+        self.perform = perform
+    }
+
+    /// Default leading (left-to-right swipe) action: toggle completion.
+    static func standardCompletion(
+        task: Task,
+        today: TodayController,
+        onFinish: @escaping () async -> Void
+    ) -> TodayRowSwipeAction {
+        TodayRowSwipeAction(
+            systemImage: task.isCompleted ? AppSymbols.Tasks.incomplete : AppSymbols.Tasks.complete,
+            accessibilityLabel: task.isCompleted ? String(localized: "Mark not done") : String(localized: "Done"),
+            tint: .green
+        ) {
+            if task.isCompleted {
+                await today.uncomplete(task)
+            } else {
+                await today.complete(task)
+                await onFinish()
             }
-            .buttonStyle(.borderless)
-            .accessibilityLabel(task.isCompleted ? String(localized: "Completed") : String(localized: "Mark done"))
-
-            VStack(alignment: .leading, spacing: AppSpacing.xs) {
-                Text(task.title)
-                    .font(.body)
-                    .strikethrough(task.isCompleted)
-                    .foregroundStyle(task.isCompleted ? .secondary : .primary)
-
-                if let notes = task.notes, !notes.isEmpty {
-                    Text(notes)
-                        .font(.subheadline)
-                        .foregroundStyle(.secondary)
-                        .lineLimit(2)
-                }
-            }
-
-            Spacer()
         }
-        .padding(.vertical, AppSpacing.xs)
-        .contentShape(Rectangle())
-        .onTapGesture(perform: onEdit)
-        .swipeActions(edge: .leading, allowsFullSwipe: true) {
-            Button {
-                Swift.Task {
-                    await today.complete(task)
-                    await onComplete()
-                }
-            } label: {
-                Image(systemName: AppSymbols.Tasks.complete)
-            }
-            .accessibilityLabel(String(localized: "Done"))
-            .tint(.green)
-        }
-        .swipeActions(edge: .trailing, allowsFullSwipe: true) {
-            Button {
-                Swift.Task { await today.removeFromToday(task) }
-            } label: {
-                Label("Remove Today", systemImage: "calendar.badge.minus")
-                    .labelStyle(.titleAndIcon)
-            }
-            .tint(.orange)
+    }
+
+    /// Default trailing (right-to-left swipe) action: remove the task from Today.
+    static func standardRemoveFromToday(task: Task, today: TodayController) -> TodayRowSwipeAction {
+        TodayRowSwipeAction(
+            systemImage: AppSymbols.Tasks.removeFromToday,
+            accessibilityLabel: String(localized: "Remove from Today"),
+            tint: .orange
+        ) {
+            await today.removeFromToday(task)
         }
     }
 }
 
 #if DEBUG
+// MARK: - TodayTabView previews
+
 #Preview("Today — Populated") {
     let today = PreviewMocks.today()
     TodayTabView(

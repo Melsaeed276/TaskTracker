@@ -121,6 +121,30 @@ final class TaskTrackerIOSUITests: XCTestCase {
         XCTAssertTrue(deleteButton.waitForExistence(timeout: 5))
     }
 
+    func testTodayCompletionButtonStartsCompletionAnimation() throws {
+        openQuickEntry()
+        let field = quickEntryField()
+        field.typeText("Completion animation task\n")
+
+        let title = app.staticTexts["Completion animation task"]
+        XCTAssertTrue(title.waitForExistence(timeout: 5))
+
+        let completionButton = app.buttons["taskRow.completionButton"].firstMatch
+        XCTAssertTrue(completionButton.waitForExistence(timeout: 5))
+        XCTAssertEqual(completionButton.value as? String, "incomplete")
+
+        completionButton.tap()
+
+        XCTAssertTrue(
+            waitForValue(of: completionButton, toBe: "animating-to-completed", timeout: 1),
+            "Completion button should expose the in-flight animation phase before settling. Current value: \(completionButton.value ?? "nil")"
+        )
+        XCTAssertTrue(
+            waitForElementToDisappear(title, timeout: 3),
+            "Completed Today task should leave the filtered Today list after the animation window."
+        )
+    }
+
     // MARK: - Responsive layout
 
     /// Asserts an element is present, fully on-screen (not clipped by the window), and tappable.
@@ -233,5 +257,22 @@ final class TaskTrackerIOSUITests: XCTestCase {
         XCTAssertTrue(fallbackField.waitForExistence(timeout: 5))
         fallbackField.tap()
         return fallbackField
+    }
+
+    private func waitForValue(of element: XCUIElement, toBe expectedValue: String, timeout: TimeInterval) -> Bool {
+        let deadline = Date().addingTimeInterval(timeout)
+        while Date() < deadline {
+            if String(describing: element.value ?? "") == expectedValue {
+                return true
+            }
+            RunLoop.current.run(mode: .default, before: Date().addingTimeInterval(0.05))
+        }
+        return String(describing: element.value ?? "") == expectedValue
+    }
+
+    private func waitForElementToDisappear(_ element: XCUIElement, timeout: TimeInterval) -> Bool {
+        let predicate = NSPredicate(format: "exists == false")
+        let expectation = XCTNSPredicateExpectation(predicate: predicate, object: element)
+        return XCTWaiter().wait(for: [expectation], timeout: timeout) == .completed
     }
 }

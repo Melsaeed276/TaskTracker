@@ -14,6 +14,8 @@ public enum AppSymbols {
         public static let add = "plus"
         public static let scheduleToday = "sun.max"
         public static let delete = "trash"
+        public static let edit = "square.and.pencil"
+        public static let removeFromToday = "calendar.badge.minus"
     }
 
     public enum Navigation {

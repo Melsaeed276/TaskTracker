@@ -60,28 +60,51 @@ public struct TimerControlButton: View {
 public struct TaskCompletionMark: View {
     public let isCompleted: Bool
     public let tint: Color
+    public let animationToken: Int
 
-    public init(isCompleted: Bool, tint: Color = .accentColor) {
+    @State private var burstExpanded = true
+
+    public init(isCompleted: Bool, tint: Color = .accentColor, animationToken: Int = 0) {
         self.isCompleted = isCompleted
         self.tint = tint
+        self.animationToken = animationToken
     }
 
     public var body: some View {
         ZStack {
             Circle()
+                .stroke(tint.opacity(0.35), lineWidth: 2)
+                .scaleEffect(burstExpanded ? 1.95 : 0.65)
+                .opacity(burstExpanded ? 0 : 0.75)
+
+            Circle()
                 .strokeBorder(isCompleted ? tint : .secondary.opacity(0.45), lineWidth: 1.8)
-            if isCompleted {
-                Circle()
-                    .fill(tint.opacity(0.18))
-                Image(systemName: "checkmark")
-                    .font(.caption.weight(.bold))
-                    .foregroundStyle(tint)
-            }
+
+            Circle()
+                .fill(tint.opacity(0.18))
+                .scaleEffect(isCompleted ? 1 : 0.35)
+                .opacity(isCompleted ? 1 : 0)
+
+            Image(systemName: "checkmark")
+                .font(.caption.weight(.bold))
+                .foregroundStyle(tint)
+                .scaleEffect(isCompleted ? 1 : 0.2)
+                .opacity(isCompleted ? 1 : 0)
         }
         .frame(width: 24, height: 24)
         // Hollow stroke has no fill, so macOS hit-testing skips the interior without an
         // explicit content shape (same failure mode as the menu-bar Today row).
         .contentShape(Rectangle())
+        .animation(.spring(response: 0.28, dampingFraction: 0.52), value: isCompleted)
+        .onChange(of: animationToken) { _, token in
+            guard token > 0 else { return }
+            burstExpanded = false
+            DispatchQueue.main.async {
+                withAnimation(.easeOut(duration: 0.55)) {
+                    burstExpanded = true
+                }
+            }
+        }
     }
 }
 
